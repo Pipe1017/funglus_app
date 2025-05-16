@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* REGLA PARA HTML (Solución al salto del scrollbar) */
+html {
+  overflow-y: scroll; /* Mantiene el espacio del scrollbar siempre visible */
+}
+
+/* REGLA BASE PARA BODY */
+body {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  @apply text-gray-900; /* Color de texto base */
+}
+
+/* Estilos para el elemento 'code' */
+code {
+  font-weight: 600;
+  padding: 3px 5px;
+  border-radius: 2px;
+  background-color: var(--color-background-mute);
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SF Mono,
+    Menlo,
+    Consolas,
+    Liberation Mono,
+    monospace;
+  font-size: 85%;
+}
