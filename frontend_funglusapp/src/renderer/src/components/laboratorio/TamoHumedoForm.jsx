@@ -1,22 +1,24 @@
-// src/renderer/src/components/laboratorio/GubysForm.jsx
+// src/renderer/src/components/laboratorio/TamoHumedoForm.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 // Ya no necesitamos useCiclo aquí si las claves vienen como props
 
 const initialFormState = {
   fecha_i: '',
   fecha_p: '',
-  // 'origen' viene como prop (origenKey), no es parte del estado de este formulario.
-  // 'muestra' no existe para Gubys.
+  // origen viene como prop (origenKey)
   p1h1: '',
   p2h2: '',
   porc_h1: '',
   porc_h2: '',
   p_ph: '',
-  ph: ''
-  // Hprom es calculado en el backend
+  ph: '',
+  d1: '',
+  d2: '',
+  d3: ''
+  // Hprom y Dprom son calculados
 }
 
-function GubysForm({ cicloKey, origenKey }) {
+function TamoHumedoForm({ cicloKey, origenKey }) {
   // Recibe cicloKey y origenKey como props
   const [formData, setFormData] = useState(initialFormState)
   const [currentEntry, setCurrentEntry] = useState(null)
@@ -27,17 +29,22 @@ function GubysForm({ cicloKey, origenKey }) {
   const formFields = [
     { name: 'fecha_i', label: 'Fecha Inicio', type: 'date' },
     { name: 'fecha_p', label: 'Fecha Pesaje', type: 'date' },
-    // 'origen' no es un campo editable aquí, se muestra en el título
-    // 'muestra' no existe para Gubys
+    // 'origen' no es un campo editable aquí
     { name: 'p1h1', label: 'P1H1', type: 'number' },
     { name: 'p2h2', label: 'P2H2', type: 'number' },
     { name: 'porc_h1', label: '%H1', type: 'number' },
     { name: 'porc_h2', label: '%H2', type: 'number' },
     { name: 'p_ph', label: 'P_PH', type: 'number' },
-    { name: 'ph', label: 'PH', type: 'number' }
+    { name: 'ph', label: 'PH', type: 'number' },
+    { name: 'd1', label: 'd1', type: 'number' },
+    { name: 'd2', label: 'd2', type: 'number' },
+    { name: 'd3', label: 'd3', type: 'number' }
   ]
 
-  const calculatedFields = [{ name: 'hprom', label: 'Hprom (Calculado)' }]
+  const calculatedFields = [
+    { name: 'hprom', label: 'Hprom (Calculado)' },
+    { name: 'dprom', label: 'Dprom (Calculado)' }
+  ]
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -60,8 +67,8 @@ function GubysForm({ cicloKey, origenKey }) {
     setMessage({ text: '', type: '' })
     try {
       const keys = { ciclo: cicloKey, origen: origenKey }
-      console.log(`GubysForm: Fetching/Creating entry for keys:`, keys)
-      const entryData = await window.electronAPI.getOrCreateGubys(keys)
+      console.log(`TamoHumedoForm: Fetching/Creating entry for keys:`, keys)
+      const entryData = await window.electronAPI.getOrCreateTamoHumedo(keys)
 
       if (entryData) {
         const populatedFormData = {}
@@ -73,12 +80,12 @@ function GubysForm({ cicloKey, origenKey }) {
         })
         setFormData(populatedFormData)
         setCurrentEntry(entryData)
-        setMessage({ text: 'Datos de Gubys cargados/inicializados.', type: 'info' })
+        setMessage({ text: 'Datos de Tamo Húmedo cargados/inicializados.', type: 'info' })
       } else {
         setFormData(initialFormState)
         setCurrentEntry(null)
         setMessage({
-          text: `No se pudo obtener o crear la entrada Gubys para ${cicloKey}/${origenKey}.`,
+          text: `No se pudo obtener o crear la entrada Tamo Húmedo para ${cicloKey}/${origenKey}.`,
           type: 'warning'
         })
       }
@@ -86,10 +93,10 @@ function GubysForm({ cicloKey, origenKey }) {
       setFormData(initialFormState)
       setCurrentEntry(null)
       setMessage({
-        text: `Error al cargar datos Gubys: ${error.message || 'Error desconocido'}`,
+        text: `Error al cargar datos Tamo Húmedo: ${error.message || 'Error desconocido'}`,
         type: 'error'
       })
-      console.error('GubysForm: Error al cargar/crear entrada:', error)
+      console.error('TamoHumedoForm: Error al cargar/crear entrada:', error)
     } finally {
       setIsFetchingData(false)
     }
@@ -117,16 +124,16 @@ function GubysForm({ cicloKey, origenKey }) {
 
     try {
       const keys = { ciclo: cicloKey, origen: origenKey }
-      console.log(`GubysForm: Actualizando datos para keys:`, keys, `con data:`, dataToSubmit)
-      const result = await window.electronAPI.updateGubys(keys, dataToSubmit)
-      setMessage({ text: `Entrada Gubys actualizada. Key: ${result.key}`, type: 'success' })
+      console.log(`TamoHumedoForm: Actualizando datos para keys:`, keys, `con data:`, dataToSubmit)
+      const result = await window.electronAPI.updateTamoHumedo(keys, dataToSubmit)
+      setMessage({ text: `Entrada Tamo Húmedo actualizada. Key: ${result.key}`, type: 'success' })
       fetchDataForCurrentKeys()
     } catch (error) {
       setMessage({
-        text: `Error al actualizar Gubys: ${error.message || 'Error desconocido'}`,
+        text: `Error al actualizar Tamo Húmedo: ${error.message || 'Error desconocido'}`,
         type: 'error'
       })
-      console.error('GubysForm: Error al actualizar:', error)
+      console.error('TamoHumedoForm: Error al actualizar:', error)
     } finally {
       setIsLoadingForm(false)
     }
@@ -139,7 +146,7 @@ function GubysForm({ cicloKey, origenKey }) {
         className="p-6 bg-gray-50 rounded-lg shadow-md space-y-4 border border-gray-200"
       >
         <h3 className="text-lg font-medium text-gray-800">
-          Datos GUBYS para: <br />
+          Datos TAMO HÚMEDO para: <br />
           Ciclo: <span className="font-bold text-indigo-600">{cicloKey || 'N/A'}</span>, Origen:{' '}
           <span className="font-bold text-indigo-600">{origenKey || 'N/A'}</span>
           {currentEntry && (
@@ -155,7 +162,7 @@ function GubysForm({ cicloKey, origenKey }) {
           {formFields.map((field) => (
             <div key={field.name}>
               <label
-                htmlFor={`gubys-${field.name}`}
+                htmlFor={`th-${field.name}`}
                 className="block text-sm font-medium text-gray-700"
               >
                 {field.label}
@@ -163,7 +170,7 @@ function GubysForm({ cicloKey, origenKey }) {
               <input
                 type={field.type}
                 name={field.name}
-                id={`gubys-${field.name}`}
+                id={`th-${field.name}`}
                 value={formData[field.name] === null ? '' : formData[field.name]}
                 onChange={handleChange}
                 step={field.type === 'number' ? 'any' : undefined}
@@ -178,7 +185,7 @@ function GubysForm({ cicloKey, origenKey }) {
           disabled={!cicloKey || !origenKey || isLoadingForm || isFetchingData}
           className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white font-medium text-xs uppercase rounded shadow-md hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out"
         >
-          {isLoadingForm ? 'Guardando Cambios...' : 'Guardar Cambios Gubys'}
+          {isLoadingForm ? 'Guardando Cambios...' : 'Guardar Cambios Tamo Húmedo'}
         </button>
         {message.text && (
           <p
@@ -197,11 +204,13 @@ function GubysForm({ cicloKey, origenKey }) {
         )}
       </form>
 
-      {/* Tabla de Visualización para Gubys */}
+      {/* Tabla de Visualización para TamoHumedo */}
       {cicloKey && origenKey && currentEntry && (
         <div className="mt-8 p-6 bg-white rounded-lg shadow border border-gray-200">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">Datos Registrados de Gubys</h3>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Datos Registrados de Tamo Húmedo
+            </h3>
             <button
               onClick={fetchDataForCurrentKeys}
               disabled={isFetchingData || !cicloKey || !origenKey}
@@ -264,11 +273,11 @@ function GubysForm({ cicloKey, origenKey }) {
       )}
       {!isFetchingData && !currentEntry && cicloKey && origenKey && (
         <div className="mt-8 p-6 bg-yellow-50 text-yellow-700 rounded-lg shadow border border-yellow-200 text-sm">
-          No hay datos cargados para Gubys (Ciclo: {cicloKey}, Origen: {origenKey}). El placeholder
-          está vacío o la carga inicial falló. Puede ingresar datos y guardar.
+          No hay datos cargados para Tamo Húmedo (Ciclo: {cicloKey}, Origen: {origenKey}). El
+          placeholder está vacío o la carga inicial falló. Puede ingresar datos y guardar.
         </div>
       )}
     </div>
   )
 }
-export default GubysForm
+export default TamoHumedoForm

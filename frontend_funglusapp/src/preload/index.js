@@ -2,39 +2,34 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 const electronAPI = {
-  // NUEVA función para inicializar ciclo
-  initializeCicloPlaceholders: (cicloId) => ipcRenderer.invoke('ciclo:initialize-placeholders', cicloId),
-  getDistinctCiclos: () => ipcRenderer.invoke('ciclo:get-distinct'), // <--- AÑADE ESTA LÍNEA
-  
-  // Laboratorio - MATERIA PRIMA (NUEVO)
-  updateMateriaPrimaByCiclo: (cicloId, data) => ipcRenderer.invoke('lab:update-materia_prima-by-ciclo', { cicloId, data }),
-  getMateriaPrimaByCiclo: (cicloId) => ipcRenderer.invoke('lab:get-materia_prima-by-ciclo', cicloId),
-  // getAllMateriaPrima: () => ipcRenderer.invoke('lab:get-all-materia_prima'), // Si lo necesitas
+  // Utilidades de Ciclo
+  getDistinctCiclos: () => ipcRenderer.invoke('ciclo:get-distinct'),
 
-  // Laboratorio - GUBYS
-  // Cambiado de submitGubys a updateGubysByCiclo, ahora pasamos cicloId y data
-  updateGubysByCiclo: (cicloId, data) => ipcRenderer.invoke('lab:update-gubys-by-ciclo', { cicloId, data }),
-  getGubysByCiclo: (cicloId) => ipcRenderer.invoke('lab:get-gubys-by-ciclo', cicloId),
-  // getAllGubys: () => ipcRenderer.invoke('lab:get-all-gubys'),
+  // Materia Prima (Claves: ciclo, origen, muestra)
+  getOrCreateMateriaPrima: (keys) => ipcRenderer.invoke('lab:get-or-create-materia_prima', keys),
+  updateMateriaPrima: (keys, data) =>
+    ipcRenderer.invoke('lab:update-materia_prima', { keys, data }),
 
-  // Laboratorio - CENIZAS
-  updateCenizasByCiclo: (cicloId, data) => ipcRenderer.invoke('lab:update-cenizas-by-ciclo', { cicloId, data }),
-  getCenizasByCiclo: (cicloId) => ipcRenderer.invoke('lab:get-cenizas-by-ciclo', cicloId),
-  // getAllCenizas: () => ipcRenderer.invoke('lab:get-all-cenizas'),
-  
-  // Formulación
-  updateFormulacionByCiclo: (cicloId, data) => ipcRenderer.invoke('form:update-formulacion-by-ciclo', { cicloId, data }),
-  getFormulacionByCiclo: (cicloId) => ipcRenderer.invoke('form:get-formulacion-by-ciclo', cicloId),
-  // getAllFormulaciones: () => ipcRenderer.invoke('form:get-all-formulaciones'),
+  // Gubys (Claves: ciclo, origen)
+  getOrCreateGubys: (keys) => ipcRenderer.invoke('lab:get-or-create-gubys', keys),
+  updateGubys: (keys, data) => ipcRenderer.invoke('lab:update-gubys', { keys, data }),
+
+  // Tamo Humedo (Claves: ciclo, origen)
+  getOrCreateTamoHumedo: (keys) => ipcRenderer.invoke('lab:get-or-create-tamo_humedo', keys),
+  updateTamoHumedo: (keys, data) => ipcRenderer.invoke('lab:update-tamo_humedo', { keys, data })
+
+  // Formulacion (Placeholder para el futuro, Claves: ciclo, muestra - según tu última definición)
+  // getOrCreateFormulacion: (keys) => ipcRenderer.invoke('form:get-or-create-formulacion', keys),
+  // updateFormulacion: (keys, data) => ipcRenderer.invoke('form:update-formulacion', { keys, data }),
 }
 
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electronAPI', electronAPI)
-    console.log('Preload: electronAPI (actualizada) expuesta al mundo principal.');
+    console.log('Preload: electronAPI (reestructurada) expuesta al mundo principal.')
   } catch (error) {
     console.error('Preload: Fallo al exponer electronAPI:', error)
   }
 } else {
-  console.warn('Preload: Context Isolation está deshabilitado...')
+  console.warn('Preload: Context Isolation está deshabilitado.')
 }

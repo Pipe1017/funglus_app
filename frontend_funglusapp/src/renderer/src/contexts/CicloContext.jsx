@@ -1,45 +1,71 @@
 // src/renderer/src/contexts/CicloContext.jsx
-import React, { createContext, useState, useContext, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-const CicloContext = createContext(undefined);
+const CicloContext = createContext(undefined)
 
 export function CicloProvider({ children }) {
-  const [currentCiclo, setCurrentCiclo] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [currentCiclo, setCurrentCiclo] = useState('')
+  const [availableCiclos, setAvailableCiclos] = useState([])
+  const [isFetchingCiclos, setIsFetchingCiclos] = useState(false)
+  const [feedbackMessage, setFeedbackMessage] = useState('') // Para mensajes generales del ciclo
+
+  const fetchAvailableCiclosAPI = useCallback(async () => {
+    setIsFetchingCiclos(true)
+    try {
+      console.log('CicloContext: Solicitando lista de ciclos distintos...')
+      const ciclos = await window.electronAPI.getDistinctCiclos()
+      setAvailableCiclos(ciclos || [])
+      console.log('CicloContext: Ciclos distintos recibidos:', ciclos)
+    } catch (error) {
+      console.error('CicloContext: Error al cargar ciclos disponibles:', error)
+      setFeedbackMessage(`Error al cargar lista de ciclos: ${error.message}`)
+      setTimeout(() => setFeedbackMessage(''), 5000)
+    } finally {
+      setIsFetchingCiclos(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAvailableCiclosAPI() // Cargar al inicio
+  }, [fetchAvailableCiclosAPI])
 
   const selectCiclo = (cicloId) => {
-    const trimmedCicloId = cicloId.trim();
-    if (trimmedCicloId) {
-      setCurrentCiclo(trimmedCicloId);
-      setFeedbackMessage(`Ciclo activo establecido: ${trimmedCicloId}`);
-      console.log("CicloContext: Ciclo activo cambiado a:", trimmedCicloId);
-    } else {
-      setCurrentCiclo('');
-      setFeedbackMessage('Ciclo activo limpiado.');
-      console.log("CicloContext: Ciclo activo limpiado.");
-    }
-    // Limpiar el mensaje después de unos segundos
-    setTimeout(() => setFeedbackMessage(''), 3000);
-  };
+    const trimmedCicloId = cicloId.trim()
+    setCurrentCiclo(trimmedCicloId)
+    setFeedbackMessage(
+      trimmedCicloId
+        ? `Ciclo activo globalmente: ${trimmedCicloId}`
+        : 'Ciclo activo global limpiado.'
+    )
+    console.log('CicloContext: Ciclo activo global:', trimmedCicloId || 'ninguno')
+    setTimeout(() => setFeedbackMessage(''), 3000)
+    // Ya no reseteamos origen y muestra aquí, eso lo manejará el KeySelector o la página
+  }
 
-  // useMemo para optimizar y evitar re-renders innecesarios
-  const value = useMemo(() => ({
-    currentCiclo,
-    selectCiclo,
-    feedbackMessage
-  }), [currentCiclo, feedbackMessage]);
+  // Función para refrescar la lista de ciclos desde fuera si es necesario
+  const refreshCiclos = useCallback(() => {
+    fetchAvailableCiclosAPI()
+  }, [fetchAvailableCiclosAPI])
 
-  return (
-    <CicloContext.Provider value={value}>
-      {children}
-    </CicloContext.Provider>
-  );
+  const value = useMemo(
+    () => ({
+      currentCiclo,
+      selectCiclo,
+      availableCiclos,
+      isFetchingCiclos,
+      refreshCiclos, // Exponer la función de refresco
+      feedbackMessage
+    }),
+    [currentCiclo, availableCiclos, isFetchingCiclos, refreshCiclos, feedbackMessage]
+  )
+
+  return <CicloContext.Provider value={value}>{children}</CicloContext.Provider>
 }
 
 export function useCiclo() {
-  const context = useContext(CicloContext);
-  if (context === undefined) { // Comprueba si el contexto es undefined
-    throw new Error('useCiclo debe usarse dentro de un CicloProvider');
+  const context = useContext(CicloContext)
+  if (context === undefined) {
+    throw new Error('useCiclo debe usarse dentro de un CicloProvider')
   }
-  return context;
+  return context
 }

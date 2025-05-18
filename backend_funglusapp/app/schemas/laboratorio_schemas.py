@@ -1,70 +1,84 @@
 # backend_funglusapp/app/schemas/laboratorio_schemas.py
+from typing import List, Optional
+
 from pydantic import BaseModel
-from typing import Optional, List
+
+
+# --- MATERIA PRIMA Schemas ---
+class MateriaPrimaKeys(BaseModel):
+    ciclo: str
+    origen: str
+    muestra: str
+
+
+class MateriaPrimaDataUpdate(BaseModel):
+    fecha_i: Optional[str] = None
+    fecha_p: Optional[str] = None
+    p1h1: Optional[float] = None
+    p2h2: Optional[float] = None
+    porc_h1: Optional[float] = None
+    porc_h2: Optional[float] = None
+    p_ph: Optional[float] = None
+    ph: Optional[float] = None
+    d1: Optional[float] = None
+    d2: Optional[float] = None
+    d3: Optional[float] = None
+
+
+class MateriaPrimaPutPayload(
+    MateriaPrimaKeys, MateriaPrimaDataUpdate
+):  # Combina claves y datos
+    pass  # Hereda todos los campos
+
+
+class MateriaPrimaInDB(MateriaPrimaKeys, MateriaPrimaDataUpdate):
+    key: int
+    hprom: Optional[float] = None
+    dprom: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
 
 # --- GUBYS Schemas ---
-# (Tu código de GubysBase, GubysUpdate, GubysInDB existente va aquí, sin cambios)
-class GubysBase(BaseModel):
+class GubysKeys(BaseModel):
     ciclo: str
+    origen: str
+
+
+class GubysDataUpdate(BaseModel):
     fecha_i: Optional[str] = None
     fecha_p: Optional[str] = None
-    origen: Optional[str] = None
     p1h1: Optional[float] = None
     p2h2: Optional[float] = None
     porc_h1: Optional[float] = None
     porc_h2: Optional[float] = None
     p_ph: Optional[float] = None
     ph: Optional[float] = None
-    hprom: Optional[float] = None
+    # 'muestra' no es un campo de datos para Gubys según nuestra última definición
 
-class GubysUpdate(BaseModel):
-    fecha_i: Optional[str] = None
-    fecha_p: Optional[str] = None
-    origen: Optional[str] = None
-    p1h1: Optional[float] = None
-    p2h2: Optional[float] = None
-    porc_h1: Optional[float] = None
-    porc_h2: Optional[float] = None
-    p_ph: Optional[float] = None
-    ph: Optional[float] = None
-    hprom: Optional[float] = None
 
-class GubysInDB(GubysBase):
+class GubysPutPayload(GubysKeys, GubysDataUpdate):  # Combina claves y datos
+    pass
+
+
+class GubysInDB(GubysKeys, GubysDataUpdate):
     key: int
-    class Config: from_attributes = True
+    hprom: Optional[float] = None
 
-# --- CENIZAS Schemas ---
-# (Tu código de CenizasBase, CenizasUpdate, CenizasInDB existente va aquí, sin cambios)
-class CenizasBase(BaseModel):
+    class Config:
+        from_attributes = True
+
+
+# --- TAMO HUMEDO Schemas ---
+class TamoHumedoKeys(BaseModel):
     ciclo: str
-    fecha_i: Optional[str] = None
-    muestra: Optional[str] = None
-    origen: Optional[str] = None
-    p1: Optional[float] = None
-    p2: Optional[float] = None
-    p3: Optional[float] = None
-    porc_cz: Optional[float] = None
+    origen: str
 
-class CenizasUpdate(BaseModel):
-    fecha_i: Optional[str] = None
-    muestra: Optional[str] = None
-    origen: Optional[str] = None
-    p1: Optional[float] = None
-    p2: Optional[float] = None
-    p3: Optional[float] = None
-    porc_cz: Optional[float] = None
 
-class CenizasInDB(CenizasBase):
-    key: int
-    class Config: from_attributes = True
-
-# --- MATERIA PRIMA Schemas --- (NUEVO)
-class MateriaPrimaBase(BaseModel):
-    ciclo: str # Para la respuesta completa
+class TamoHumedoDataUpdate(BaseModel):
     fecha_i: Optional[str] = None
     fecha_p: Optional[str] = None
-    muestra: Optional[str] = None
-    origen: Optional[str] = None
     p1h1: Optional[float] = None
     p2h2: Optional[float] = None
     porc_h1: Optional[float] = None
@@ -74,25 +88,18 @@ class MateriaPrimaBase(BaseModel):
     d1: Optional[float] = None
     d2: Optional[float] = None
     d3: Optional[float] = None
-    hprom: Optional[float] = None # Campo calculado
-    dprom: Optional[float] = None # Campo calculado
 
-class MateriaPrimaUpdate(BaseModel): # Para el cuerpo del PUT
-    fecha_i: Optional[str] = None
-    fecha_p: Optional[str] = None
-    muestra: Optional[str] = None
-    origen: Optional[str] = None
-    p1h1: Optional[float] = None
-    p2h2: Optional[float] = None
-    porc_h1: Optional[float] = None
-    porc_h2: Optional[float] = None
-    p_ph: Optional[float] = None
-    ph: Optional[float] = None
-    d1: Optional[float] = None
-    d2: Optional[float] = None
-    d3: Optional[float] = None
-    # hprom y dprom no se envían, se calculan
 
-class MateriaPrimaInDB(MateriaPrimaBase):
+class TamoHumedoPutPayload(
+    TamoHumedoKeys, TamoHumedoDataUpdate
+):  # Combina claves y datos
+    pass
+
+
+class TamoHumedoInDB(TamoHumedoKeys, TamoHumedoDataUpdate):
     key: int
-    class Config: from_attributes = True
+    hprom: Optional[float] = None
+    dprom: Optional[float] = None
+
+    class Config:
+        from_attributes = True

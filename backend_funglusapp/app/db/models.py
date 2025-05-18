@@ -1,75 +1,85 @@
 # backend_funglusapp/app/db/models.py
-from sqlalchemy import Column, Integer, String, Float
-from .database import Base # Importación relativa
+from sqlalchemy import Column, Float, Integer, String, UniqueConstraint
 
-# --- LABORATORIO ---
-class MateriaPrima(Base): # NUEVA TABLA
+from .database import Base
+
+
+class MateriaPrima(Base):
     __tablename__ = "lab_materia_prima"
     key = Column(Integer, primary_key=True, index=True)
-    ciclo = Column(String, unique=True, index=True, nullable=False)
-    fecha_i = Column(String, nullable=True)
-    fecha_p = Column(String, nullable=True)
-    muestra = Column(String, nullable=True) # Campo Muestra
-    origen = Column(String, nullable=True)
-    p1h1 = Column(Float, nullable=True)
-    p2h2 = Column(Float, nullable=True)
-    porc_h1 = Column(Float, nullable=True) # %H1
-    porc_h2 = Column(Float, nullable=True) # %H2
-    p_ph = Column(Float, nullable=True)
-    ph = Column(Float, nullable=True)
-    d1 = Column(Float, nullable=True)
-    d2 = Column(Float, nullable=True)
-    d3 = Column(Float, nullable=True)
-    hprom = Column(Float, nullable=True) # Calculado: (%H1 + %H2) / 2
-    dprom = Column(Float, nullable=True) # Calculado: (d1 + d2 + d3) / 3
+    ciclo = Column(String, index=True, nullable=False)
+    origen = Column(String, index=True, nullable=False)  # Clave
+    muestra = Column(String, index=True, nullable=False)  # Clave
 
-class Gubys(Base):
-    __tablename__ = "lab_gubys"
-    key = Column(Integer, primary_key=True, index=True)
-    ciclo = Column(String, unique=True, index=True, nullable=False)
     fecha_i = Column(String, nullable=True)
     fecha_p = Column(String, nullable=True)
-    origen = Column(String, nullable=True)
     p1h1 = Column(Float, nullable=True)
     p2h2 = Column(Float, nullable=True)
     porc_h1 = Column(Float, nullable=True)
     porc_h2 = Column(Float, nullable=True)
     p_ph = Column(Float, nullable=True)
     ph = Column(Float, nullable=True)
-    hprom = Column(Float, nullable=True) # Calculado
+    d1 = Column(Float, nullable=True)
+    d2 = Column(Float, nullable=True)
+    d3 = Column(Float, nullable=True)
+    hprom = Column(Float, nullable=True)
+    dprom = Column(Float, nullable=True)
 
-class Cenizas(Base):
-    __tablename__ = "lab_cenizas"
+    __table_args__ = (
+        UniqueConstraint(
+            "ciclo", "origen", "muestra", name="_mp_ciclo_origen_muestra_uc"
+        ),
+    )
+
+
+class Gubys(Base):
+    __tablename__ = "lab_gubys"
     key = Column(Integer, primary_key=True, index=True)
-    ciclo = Column(String, unique=True, index=True, nullable=False)
+    ciclo = Column(String, index=True, nullable=False)  # Clave
+    origen = Column(String, index=True, nullable=False)  # Clave
+    # Muestra ya no es clave para Gubys, si lo necesitas como campo de datos, añádelo:
+    # muestra = Column(String, nullable=True)
+
     fecha_i = Column(String, nullable=True)
-    muestra = Column(String, nullable=True)
-    origen = Column(String, nullable=True)
-    p1 = Column(Float, nullable=True)
-    p2 = Column(Float, nullable=True)
-    p3 = Column(Float, nullable=True)
-    porc_cz = Column(Float, nullable=True)
+    fecha_p = Column(String, nullable=True)
+    p1h1 = Column(Float, nullable=True)
+    p2h2 = Column(Float, nullable=True)
+    porc_h1 = Column(Float, nullable=True)
+    porc_h2 = Column(Float, nullable=True)
+    p_ph = Column(Float, nullable=True)
+    ph = Column(Float, nullable=True)
+    hprom = Column(Float, nullable=True)  # Calculado
 
-class Formulacion(Base):
-    __tablename__ = "formulacion"
+    __table_args__ = (
+        UniqueConstraint("ciclo", "origen", name="_gubys_ciclo_origen_uc"),
+    )  # CAMBIO AQUÍ
+
+
+class TamoHumedo(Base):
+    __tablename__ = "lab_tamo_humedo"
     key = Column(Integer, primary_key=True, index=True)
-    ciclo = Column(String, unique=True, index=True, nullable=False)
-    peso = Column(Float, nullable=True)
-    muestra = Column(String, nullable=True)
-    origen = Column(String, nullable=True)
-    porc_n_entrada = Column(Float, nullable=True)
-    porc_cz_entrada = Column(Float, nullable=True)
-    hprom_entrada = Column(Float, nullable=True)
-    ms_kg = Column(Float, nullable=True)
-    n_kg = Column(Float, nullable=True)
-    porc_n_ms = Column(Float, nullable=True)
-    cz_kg = Column(Float, nullable=True)
-    porc_cz_ms = Column(Float, nullable=True)
-    c_kg = Column(Float, nullable=True)
-    c_n_ratio = Column(Float, nullable=True)
-    mos_kg = Column(Float, nullable=True)
-    porc_n_mos = Column(Float, nullable=True)
-    porc_cz_mos = Column(Float, nullable=True)
+    ciclo = Column(String, index=True, nullable=False)  # Clave
+    origen = Column(String, index=True, nullable=False)  # Clave
+    # Muestra ya no es clave para TamoHumedo, si lo necesitas como campo de datos, añádelo:
+    # muestra = Column(String, nullable=True)
 
-# Aquí irían los modelos para ARMADA, VOLTEO, etc. cuando los añadas.
-# Recuerda añadirles 'unique=True' a su campo 'ciclo' también.
+    fecha_i = Column(String, nullable=True)
+    fecha_p = Column(String, nullable=True)
+    p1h1 = Column(Float, nullable=True)
+    p2h2 = Column(Float, nullable=True)
+    porc_h1 = Column(Float, nullable=True)
+    porc_h2 = Column(Float, nullable=True)
+    p_ph = Column(Float, nullable=True)
+    ph = Column(Float, nullable=True)
+    d1 = Column(Float, nullable=True)
+    d2 = Column(Float, nullable=True)
+    d3 = Column(Float, nullable=True)
+    hprom = Column(Float, nullable=True)
+    dprom = Column(Float, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("ciclo", "origen", name="_tamo_humedo_ciclo_origen_uc"),
+    )  # CAMBIO AQUÍ
+
+
+# La clase Formulacion ha sido eliminada.

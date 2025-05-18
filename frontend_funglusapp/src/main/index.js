@@ -1,27 +1,25 @@
 // src/main/index.js
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join, dirname } from 'path'
+import { electronApp, is } from '@electron-toolkit/utils'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-// import icon from '../../resources/icon.png?asset'; // La plantilla de electron-vite lo pone en resources
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'; // URL base de tu API backend
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1366, // Un poco más ancho
+    width: 1366,
     height: 768,
     show: false,
     autoHideMenuBar: true,
-    // ...(process.platform === 'linux' && icon ? { icon } : {}), // Comenta o reemplaza si no tienes icon.png en resources/
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'), // Ruta correcta al preload
-      sandbox: false, // Para desarrollo. En producción, considera true con config SUID sandbox en Linux
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false,
+      nodeIntegration: false
     }
   })
 
@@ -36,17 +34,14 @@ function createWindow() {
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' }); // Abrir DevTools
+    if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.funglusapp.desktop') // Puedes cambiar esto
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+  electronApp.setAppUserModelId('com.funglusapp.desktop')
   createWindow()
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -59,85 +54,95 @@ app.on('window-all-closed', () => {
   }
 })
 
-// --- Helper genérico para manejar peticiones a la API ---
-async function handleAPIRequest(endpoint, method = 'GET', data = null) {
-  const url = `${FASTAPI_BASE_URL}${endpoint}`;
-  // Este console.log es útil para depurar en la terminal donde corres 'npm run dev'
-  console.log(`Proceso Principal (Main): Intentando ${method} a ${url}`, data ? `con datos: ${JSON.stringify(data).substring(0,100)}...` : '');
+async function handleAPIRequest(endpoint, method = 'GET', bodyData = null) {
+  const url = `${FASTAPI_BASE_URL}${endpoint}`
+  console.log(
+    `Main Process: Intentando ${method} a ${url}`,
+    bodyData ? `con datos: ${JSON.stringify(bodyData).substring(0, 150)}...` : ''
+  )
   try {
     const options = {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
-    };
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      options.body = JSON.stringify(data);
+      headers: { 'Content-Type': 'application/json' }
+    }
+    if (bodyData && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      options.body = JSON.stringify(bodyData)
     }
 
-    const response = await fetch(url, options);
-    const responseStatus = response.status;
-    const responseText = await response.text();
+    const response = await fetch(url, options)
+    const responseStatus = response.status
+    const responseText = await response.text()
 
-    console.log(`Proceso Principal (Main): Respuesta de ${url} - Status: ${responseStatus}`);
+    console.log(`Main Process: Respuesta de ${url} - Status: ${responseStatus}`)
 
     if (!response.ok) {
-      let errorDetail = `Error HTTP! Status: ${responseStatus}`;
+      let errorDetail = `Error HTTP! Status: ${responseStatus}`
       try {
-        const errorJson = JSON.parse(responseText);
-        errorDetail = errorJson.detail || errorDetail;
-      } catch (e) { /* Mantener errorDetail si no es JSON */ }
-      console.error(`Proceso Principal (Main): Error API para ${url}:`, errorDetail);
-      throw new Error(errorDetail);
+        const errorJson = JSON.parse(responseText)
+        errorDetail = errorJson.detail || errorDetail
+      } catch (e) {
+        /* Mantener errorDetail si no es JSON */
+      }
+      console.error(`Main Process: Error API para ${url}:`, errorDetail)
+      throw new Error(errorDetail)
     }
-
-    if (responseStatus === 204) return null; // No Content
-    return JSON.parse(responseText);
+    if (responseStatus === 204) return null
+    return JSON.parse(responseText)
   } catch (error) {
-    console.error(`Proceso Principal (Main): Error de red o aplicación para ${url}:`, error.message);
-    throw error; // Propaga el error al renderer para que pueda manejarlo
+    console.error(`Main Process: Error de red o aplicación para ${url}:`, error.message)
+    throw error
   }
 }
 
-// NUEVO manejador para inicializar ciclo
-ipcMain.handle('ciclo:initialize-placeholders', (_, cicloId) => 
-  handleAPIRequest(`/ciclos/${cicloId}/initialize_placeholders`, 'POST')
-);
+// --- Manejadores IPC ---
+ipcMain.handle('ciclo:get-distinct', () => handleAPIRequest('/ciclos/distinct'))
 
-// Laboratorio - MATERIA PRIMA (NUEVO)
-ipcMain.handle('lab:update-materia_prima-by-ciclo', (_, { cicloId, data }) => 
-  handleAPIRequest(`/laboratorio/materia_prima/${cicloId}`, 'PUT', data)
-);
-ipcMain.handle('lab:get-materia_prima-by-ciclo', (_, cicloId) => 
-  handleAPIRequest(`/laboratorio/materia_prima/ciclo/${cicloId}`)
-);
-// ipcMain.handle('lab:get-all-materia_prima', () => handleAPIRequest('/laboratorio/materia_prima/'));
+// MATERIA PRIMA
+ipcMain.handle('lab:get-or-create-materia_prima', (_, keys) =>
+  handleAPIRequest('/laboratorio/materia_prima/entry', 'POST', keys)
+)
+ipcMain.handle(
+  'lab:update-materia_prima',
+  (_, { keys, data }) =>
+    handleAPIRequest('/laboratorio/materia_prima/entry', 'PUT', { ...keys, ...data }) // El backend espera claves y datos separados, o unirlos
+  // O si el backend espera claves en el body y datos en otro objeto:
+  // handleAPIRequest('/laboratorio/materia_prima/entry', 'PUT', { keys: keys, data_to_update: data })
+  // Basado en el backend que hicimos, POST y PUT a .../entry esperan las claves en el body
+  // y PUT espera los datos a actualizar también.
+  // Si el endpoint PUT es /materia_prima/{ciclo}/{origen}/{muestra}, entonces sería:
+  // handleAPIRequest(`/laboratorio/materia_prima/${keys.ciclo}/${keys.origen}/${keys.muestra}`, 'PUT', data)
+  // VOY A ASUMIR QUE LOS ENDPOINTS POST Y PUT A .../entry esperan las claves en el body,
+  // y PUT espera adicionalmente los datos a actualizar.
+  // Para PUT, el backend que hicimos toma 'keys' y 'data_to_update' como parámetros separados en la función del router.
+  // Así que necesitamos enviar un objeto que el backend pueda desestructurar o dos argumentos si IPC lo permite.
+  // Por simplicidad, el backend espera un objeto 'keys' y un objeto 'data_to_update' para el PUT.
+  // El IPC 'invoke' solo puede pasar un argumento de datos. Así que el objeto {keys, data} es correcto.
+  // El backend router debe ser ajustado para recibir esto.
+)
 
+// GUBYS
+ipcMain.handle('lab:get-or-create-gubys', (_, keys) =>
+  handleAPIRequest('/laboratorio/gubys/entry', 'POST', keys)
+)
+ipcMain.handle(
+  'lab:update-gubys',
+  (_, { keys, data }) => handleAPIRequest('/laboratorio/gubys/entry', 'PUT', { ...keys, ...data }) // Ajustar el backend si es necesario
+)
 
+// TAMO HUMEDO
+ipcMain.handle('lab:get-or-create-tamo_humedo', (_, keys) =>
+  handleAPIRequest('/laboratorio/tamo_humedo/entry', 'POST', keys)
+)
+ipcMain.handle(
+  'lab:update-tamo_humedo',
+  (_, { keys, data }) =>
+    handleAPIRequest('/laboratorio/tamo_humedo/entry', 'PUT', { ...keys, ...data }) // Ajustar el backend si es necesario
+)
 
-// GUBYS - Modificado para UPDATE (PUT)
-ipcMain.handle('lab:update-gubys-by-ciclo', (_, { cicloId, data }) => 
-  handleAPIRequest(`/laboratorio/gubys/${cicloId}`, 'PUT', data)
-);
-ipcMain.handle('lab:get-gubys-by-ciclo', (_, cicloId) => 
-  handleAPIRequest(`/laboratorio/gubys/ciclo/${cicloId}`)
-);
-// ipcMain.handle('lab:get-all-gubys', () => handleAPIRequest('/laboratorio/gubys/'));
-
-// CENIZAS - Modificado para UPDATE (PUT)
-ipcMain.handle('lab:update-cenizas-by-ciclo', (_, { cicloId, data }) => 
-  handleAPIRequest(`/laboratorio/cenizas/${cicloId}`, 'PUT', data)
-);
-ipcMain.handle('lab:get-cenizas-by-ciclo', (_, cicloId) => 
-  handleAPIRequest(`/laboratorio/cenizas/ciclo/${cicloId}`)
-);
-// ipcMain.handle('lab:get-all-cenizas', () => handleAPIRequest('/laboratorio/cenizas/'));
-
-// FORMULACION - Modificado para UPDATE (PUT)
-ipcMain.handle('form:update-formulacion-by-ciclo', (_, { cicloId, data }) => 
-  handleAPIRequest(`/formulacion/${cicloId}`, 'PUT', data)
-);
-ipcMain.handle('form:get-formulacion-by-ciclo', (_, cicloId) => 
-  handleAPIRequest(`/formulacion/ciclo/${cicloId}`)
-);
-ipcMain.handle('ciclo:get-distinct', () => // <--- AÑADE ESTE MANEJADOR
-  handleAPIRequest('/ciclos/distinct')
-);
+// FORMULACION (Comentado por ahora)
+// ipcMain.handle('form:get-or-create-formulacion', (_, keys) =>
+//   handleAPIRequest('/formulacion/entry', 'POST', keys)
+// );
+// ipcMain.handle('form:update-formulacion', (_, { keys, data }) =>
+//   handleAPIRequest('/formulacion/entry', 'PUT', { ...keys, ...data })
+// );

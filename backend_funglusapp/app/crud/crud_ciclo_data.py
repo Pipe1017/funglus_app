@@ -1,45 +1,35 @@
 # backend_funglusapp/app/crud/crud_ciclo_data.py
-from sqlalchemy.orm import Session
-from sqlalchemy import distinct
+from typing import List
+
 from app.db import models
-from typing import Tuple, Optional, List # Asegúrate que List esté aquí
+from sqlalchemy import distinct
+from sqlalchemy.orm import Session
 
-# get_or_create_placeholder no necesita cambios
-def get_or_create_placeholder(db: Session, model_class, ciclo_id: str):
-    instance = db.query(model_class).filter(model_class.ciclo == ciclo_id).first()
-    if not instance:
-        print(f"Creando placeholder para {model_class.__tablename__} con ciclo_id: {ciclo_id}")
-        instance_data = {"ciclo": ciclo_id}
-        db_instance = model_class(**instance_data)
-        db.add(db_instance)
-        db.commit()
-        db.refresh(db_instance)
-        return db_instance
-    return instance
+# La lógica de get_or_create_placeholder ahora está dentro de los CRUDs específicos
+# para cada tabla (ej. crud_laboratorio.get_or_create_materia_prima_entry)
+# porque las claves necesarias (ciclo, origen, muestra) varían.
 
-def initialize_cycle_placeholders(db: Session, ciclo_id: str) -> dict:
-    """
-    Asegura que existan entradas placeholder para un ciclo_id en todas las tablas relevantes.
-    """
-    materia_prima_entry = get_or_create_placeholder(db, models.MateriaPrima, ciclo_id) # <--- AÑADIDO
-    gubys_entry = get_or_create_placeholder(db, models.Gubys, ciclo_id)
-    cenizas_entry = get_or_create_placeholder(db, models.Cenizas, ciclo_id)
-    formulacion_entry = get_or_create_placeholder(db, models.Formulacion, ciclo_id)
-    
-    # Aquí añadirías llamadas para otros modelos (Armada, Volteo, etc.)
-    # armada_entry = get_or_create_placeholder(db, models.Armada, ciclo_id)
+# La función initialize_cycle_placeholders que creaba para TODAS las tablas
+# basado solo en ciclo_id ya no es el enfoque principal.
+# Cada entidad se obtiene o crea a través de su propio endpoint POST .../entry
 
-    return {
-        "message": f"Placeholders para ciclo '{ciclo_id}' verificados/creados.",
-        "materia_prima_key": materia_prima_entry.key, # <--- AÑADIDO
-        "gubys_key": gubys_entry.key,
-        "cenizas_key": cenizas_entry.key,
-        "formulacion_key": formulacion_entry.key,
-        # "armada_key": armada_entry.key,
-    }
 
 def get_distinct_ciclos(db: Session) -> List[str]:
-    # Podemos seguir usando Gubys como referencia, o cambiar a MateriaPrima si es el primero
-    # O incluso hacer un UNION de ciclos de varias tablas si fuera necesario, pero una es suficiente.
-    results = db.query(distinct(models.MateriaPrima.ciclo)).order_by(models.MateriaPrima.ciclo.desc()).all() # Cambiado a MateriaPrima como referencia
+    """
+    Obtiene una lista de todos los IDs de ciclo únicos que existen.
+    Se basa en la tabla MateriaPrima como referencia, asumiendo que un ciclo
+    debe tener al menos una entrada de materia prima para ser considerado "existente".
+    Puedes cambiar la tabla de referencia si otra es más apropiada.
+    """
+    results = (
+        db.query(distinct(models.MateriaPrima.ciclo))
+        .order_by(models.MateriaPrima.ciclo.desc())
+        .all()
+    )
+    # Alternativamente, si quieres ciclos de cualquier tabla de laboratorio:
+    # ciclos_mp = set(r[0] for r in db.query(distinct(models.MateriaPrima.ciclo)).all() if r[0])
+    # ciclos_gubys = set(r[0] for r in db.query(distinct(models.Gubys.ciclo)).all() if r[0])
+    # ciclos_th = set(r[0] for r in db.query(distinct(models.TamoHumedo.ciclo)).all() if r[0])
+    # all_distinct_ciclos = sorted(list(ciclos_mp.union(ciclos_gubys).union(ciclos_th)), reverse=True)
+    # return all_distinct_ciclos
     return [result[0] for result in results if result[0]]
