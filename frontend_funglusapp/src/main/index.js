@@ -22,16 +22,13 @@ function createWindow() {
       nodeIntegration: false
     }
   })
-
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
-
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
-
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
@@ -65,7 +62,10 @@ async function handleAPIRequest(endpoint, method = 'GET', bodyData = null) {
       method: method,
       headers: { 'Content-Type': 'application/json' }
     }
-    if (bodyData && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (
+      bodyData &&
+      (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')
+    ) {
       options.body = JSON.stringify(bodyData)
     }
 
@@ -81,13 +81,17 @@ async function handleAPIRequest(endpoint, method = 'GET', bodyData = null) {
         const errorJson = JSON.parse(responseText)
         errorDetail = errorJson.detail || errorDetail
       } catch (e) {
-        /* Mantener errorDetail si no es JSON */
+        /* Mantener errorDetail si no es JSON o está vacío */
       }
-      console.error(`Main Process: Error API para ${url}:`, errorDetail)
+      console.error(
+        `Main Process: Error API para ${url}:`,
+        errorDetail,
+        `Body: ${responseText.substring(0, 200)}`
+      )
       throw new Error(errorDetail)
     }
     if (responseStatus === 204) return null
-    return JSON.parse(responseText)
+    return responseText ? JSON.parse(responseText) : null
   } catch (error) {
     console.error(`Main Process: Error de red o aplicación para ${url}:`, error.message)
     throw error
@@ -95,54 +99,106 @@ async function handleAPIRequest(endpoint, method = 'GET', bodyData = null) {
 }
 
 // --- Manejadores IPC ---
-ipcMain.handle('ciclo:get-distinct', () => handleAPIRequest('/ciclos/distinct'))
 
-// MATERIA PRIMA
-ipcMain.handle('lab:get-or-create-materia_prima', (_, keys) =>
-  handleAPIRequest('/laboratorio/materia_prima/entry', 'POST', keys)
+// Catálogos - Ciclos
+ipcMain.handle('catalogo:create-ciclo', (_, data) =>
+  handleAPIRequest('/catalogos/ciclos/', 'POST', data)
 )
-ipcMain.handle(
-  'lab:update-materia_prima',
-  (_, { keys, data }) =>
-    handleAPIRequest('/laboratorio/materia_prima/entry', 'PUT', { ...keys, ...data }) // El backend espera claves y datos separados, o unirlos
-  // O si el backend espera claves en el body y datos en otro objeto:
-  // handleAPIRequest('/laboratorio/materia_prima/entry', 'PUT', { keys: keys, data_to_update: data })
-  // Basado en el backend que hicimos, POST y PUT a .../entry esperan las claves en el body
-  // y PUT espera los datos a actualizar también.
-  // Si el endpoint PUT es /materia_prima/{ciclo}/{origen}/{muestra}, entonces sería:
-  // handleAPIRequest(`/laboratorio/materia_prima/${keys.ciclo}/${keys.origen}/${keys.muestra}`, 'PUT', data)
-  // VOY A ASUMIR QUE LOS ENDPOINTS POST Y PUT A .../entry esperan las claves en el body,
-  // y PUT espera adicionalmente los datos a actualizar.
-  // Para PUT, el backend que hicimos toma 'keys' y 'data_to_update' como parámetros separados en la función del router.
-  // Así que necesitamos enviar un objeto que el backend pueda desestructurar o dos argumentos si IPC lo permite.
-  // Por simplicidad, el backend espera un objeto 'keys' y un objeto 'data_to_update' para el PUT.
-  // El IPC 'invoke' solo puede pasar un argumento de datos. Así que el objeto {keys, data} es correcto.
-  // El backend router debe ser ajustado para recibir esto.
+ipcMain.handle('catalogo:get-all-ciclos', () => handleAPIRequest('/catalogos/ciclos/'))
+ipcMain.handle('catalogo:get-ciclo-by-id', (_, id) => handleAPIRequest(`/catalogos/ciclos/${id}`))
+ipcMain.handle('catalogo:update-ciclo', (_, { id, data }) =>
+  handleAPIRequest(`/catalogos/ciclos/${id}`, 'PUT', data)
+)
+ipcMain.handle('catalogo:delete-ciclo', (_, id) =>
+  handleAPIRequest(`/catalogos/ciclos/${id}`, 'DELETE')
 )
 
-// GUBYS
-ipcMain.handle('lab:get-or-create-gubys', (_, keys) =>
-  handleAPIRequest('/laboratorio/gubys/entry', 'POST', keys)
+// Catálogos - Etapas
+ipcMain.handle('catalogo:create-etapa', (_, data) =>
+  handleAPIRequest('/catalogos/etapas/', 'POST', data)
 )
-ipcMain.handle(
-  'lab:update-gubys',
-  (_, { keys, data }) => handleAPIRequest('/laboratorio/gubys/entry', 'PUT', { ...keys, ...data }) // Ajustar el backend si es necesario
+ipcMain.handle('catalogo:get-all-etapas', () => handleAPIRequest('/catalogos/etapas/'))
+ipcMain.handle('catalogo:update-etapa', (_, { id, data }) =>
+  handleAPIRequest(`/catalogos/etapas/${id}`, 'PUT', data)
 )
-
-// TAMO HUMEDO
-ipcMain.handle('lab:get-or-create-tamo_humedo', (_, keys) =>
-  handleAPIRequest('/laboratorio/tamo_humedo/entry', 'POST', keys)
-)
-ipcMain.handle(
-  'lab:update-tamo_humedo',
-  (_, { keys, data }) =>
-    handleAPIRequest('/laboratorio/tamo_humedo/entry', 'PUT', { ...keys, ...data }) // Ajustar el backend si es necesario
+ipcMain.handle('catalogo:delete-etapa', (_, id) =>
+  handleAPIRequest(`/catalogos/etapas/${id}`, 'DELETE')
 )
 
-// FORMULACION (Comentado por ahora)
-// ipcMain.handle('form:get-or-create-formulacion', (_, keys) =>
-//   handleAPIRequest('/formulacion/entry', 'POST', keys)
-// );
-// ipcMain.handle('form:update-formulacion', (_, { keys, data }) =>
-//   handleAPIRequest('/formulacion/entry', 'PUT', { ...keys, ...data })
-// );
+// Catálogos - Muestras
+ipcMain.handle('catalogo:create-muestra', (_, data) =>
+  handleAPIRequest('/catalogos/muestras/', 'POST', data)
+)
+ipcMain.handle('catalogo:get-all-muestras', () => handleAPIRequest('/catalogos/muestras/'))
+ipcMain.handle('catalogo:update-muestra', (_, { id, data }) =>
+  handleAPIRequest(`/catalogos/muestras/${id}`, 'PUT', data)
+)
+ipcMain.handle('catalogo:delete-muestra', (_, id) =>
+  handleAPIRequest(`/catalogos/muestras/${id}`, 'DELETE')
+)
+
+// Catálogos - Origenes
+ipcMain.handle('catalogo:create-origen', (_, data) =>
+  handleAPIRequest('/catalogos/origenes/', 'POST', data)
+)
+ipcMain.handle('catalogo:get-all-origenes', () => handleAPIRequest('/catalogos/origenes/'))
+ipcMain.handle('catalogo:update-origen', (_, { id, data }) =>
+  handleAPIRequest(`/catalogos/origenes/${id}`, 'PUT', data)
+)
+ipcMain.handle('catalogo:delete-origen', (_, id) =>
+  handleAPIRequest(`/catalogos/origenes/${id}`, 'DELETE')
+)
+
+// Ciclo Data (actualmente solo get-distinct)
+ipcMain.handle('ciclo:get-distinct', () => handleAPIRequest('/ciclos/distinct')) // <--- ASEGÚRATE QUE ESTÉ AQUÍ
+
+// Datos Generales Laboratorio
+ipcMain.handle('datosGenerales:get-or-create', (_, keys) =>
+  handleAPIRequest('/datos_generales_lab/entry', 'POST', keys)
+)
+ipcMain.handle('datosGenerales:update', (_, payload) => {
+  // Recibe un solo payload
+  return handleAPIRequest('/datos_generales_lab/entry', 'PUT', payload)
+})
+ipcMain.handle('datosGenerales:get-by-ciclo', (_, cicloId) =>
+  handleAPIRequest(`/datos_generales_lab/ciclo/${cicloId}`)
+)
+ipcMain.handle('datosGenerales:delete', (_, keys) =>
+  handleAPIRequest('/datos_generales_lab/entry', 'DELETE', keys)
+)
+
+// Datos Cenizas
+ipcMain.handle('datosCenizas:create', (_, data) =>
+  handleAPIRequest('/datos_cenizas/', 'POST', data)
+)
+ipcMain.handle('datosCenizas:get-by-context', (_, keys) => {
+  const queryParams = new URLSearchParams(keys).toString()
+  return handleAPIRequest(`/datos_cenizas/contexto/?${queryParams}`)
+})
+ipcMain.handle('datosCenizas:get-by-id', (_, analisisId) =>
+  handleAPIRequest(`/datos_cenizas/${analisisId}`)
+)
+ipcMain.handle('datosCenizas:update', (_, { analisisId, data }) =>
+  handleAPIRequest(`/datos_cenizas/${analisisId}`, 'PUT', data)
+)
+ipcMain.handle('datosCenizas:delete', (_, analisisId) =>
+  handleAPIRequest(`/datos_cenizas/${analisisId}`, 'DELETE')
+)
+
+// Datos Nitrógeno
+ipcMain.handle('datosNitrogeno:create', (_, data) =>
+  handleAPIRequest('/datos_nitrogeno/', 'POST', data)
+)
+ipcMain.handle('datosNitrogeno:get-by-context', (_, keys) => {
+  const queryParams = new URLSearchParams(keys).toString()
+  return handleAPIRequest(`/datos_nitrogeno/contexto/?${queryParams}`)
+})
+ipcMain.handle('datosNitrogeno:get-by-id', (_, analisisId) =>
+  handleAPIRequest(`/datos_nitrogeno/${analisisId}`)
+)
+ipcMain.handle('datosNitrogeno:update', (_, { analisisId, data }) =>
+  handleAPIRequest(`/datos_nitrogeno/${analisisId}`, 'PUT', data)
+)
+ipcMain.handle('datosNitrogeno:delete', (_, analisisId) =>
+  handleAPIRequest(`/datos_nitrogeno/${analisisId}`, 'DELETE')
+)

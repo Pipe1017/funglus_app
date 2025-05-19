@@ -1,16 +1,14 @@
 // src/renderer/src/pages/LaboratorioPage.jsx
 import React from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-// import CicloManager from '../components/laboratorio/CicloManager'; // <--- ELIMINA ESTA LÍNEA
+import { NavLink, Outlet } from 'react-router-dom'
+// Ya no necesitamos CicloManager aquí directamente.
+// La selección de claves se manejará dentro de la sección "General" o en los formularios específicos.
 
 function LaboratorioPage() {
-  const location = useLocation() // Mantén esto si lo usas para navLinkClasses
-  const labSections = [
-    { name: 'MATERIA PRIMA', path: 'materia_prima' },
-    { name: 'TAMO HUMEDO', path: 'tamo_humedo' },
-    { name: 'GUBYS', path: 'gubys' },
-    { name: 'CENIZAS', path: 'cenizas' }
-    // ... otras secciones
+  const labSubSections = [
+    { name: 'GENERAL', path: 'general' }, // Para Ciclo, Selección de Identificadores y Metadata General
+    { name: 'ANÁLISIS DE NITRÓGENO', path: 'nitrogeno' },
+    { name: 'ANÁLISIS DE CENIZAS', path: 'cenizas' }
   ]
 
   const navLinkClasses = ({ isActive }) =>
@@ -23,15 +21,12 @@ function LaboratorioPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-800">Módulo de Laboratorio</h1>
-      {/* CicloManager ya no va aquí. Se usa KeySelector dentro de cada sección (Outlet) */}
-      {/* <CicloManager /> */} {/* <--- ELIMINA O COMENTA ESTA LÍNEA */}
+
       <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">
-          Etapas / Análisis de Laboratorio
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-700 mb-4">Sub-Módulos de Laboratorio</h2>
         <nav className="mb-6 border-b pb-4">
           <ul className="flex flex-wrap gap-x-3 gap-y-2">
-            {labSections.map((section) => (
+            {labSubSections.map((section) => (
               <li key={section.path}>
                 <NavLink to={section.path} className={navLinkClasses}>
                   {section.name}
@@ -40,8 +35,10 @@ function LaboratorioPage() {
             ))}
           </ul>
         </nav>
-        <div className="mt-1">
-          <Outlet /> {/* Las secciones como MateriaPrimaSection usarán KeySelector internamente */}
+        <div className="mt-1 p-2 bg-gray-50 rounded-b-lg min-h-[300px]">
+          {' '}
+          {/* Añadido min-h para mejor visualización */}
+          <Outlet /> {/* Aquí se renderizarán LaboratorioGeneralSection, NitrogenoSection, etc. */}
         </div>
       </div>
     </div>

@@ -2,41 +2,50 @@
 import React from 'react'
 import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
+
 import FormulacionPage from '../pages/FormulacionPage'
+import GestionCatalogosPage from '../pages/GestionCatalogosPage'
+import GestionCiclosPage from '../pages/GestionCiclosPage' // <--- IMPORTA NUEVA PÁGINA
 import InformesPage from '../pages/InformesPage'
-import CenizasSection from '../pages/laboratorio_sections/CenizasSection'
-import GubysSection from '../pages/laboratorio_sections/GubysSection'
-import MateriaPrimaSection from '../pages/laboratorio_sections/MateriaPrimaSection' // <--- IMPORTA NUEVA SECCIÓN
-import TamoHumedoSection from '../pages/laboratorio_sections/TamoHumedoSection'
 import LaboratorioPage from '../pages/LaboratorioPage'
+
+// Sub-secciones de Laboratorio
+import CenizasSection from '../pages/laboratorio_main_sections/CenizasSection'
+import LaboratorioGeneralSection from '../pages/laboratorio_main_sections/LaboratorioGeneralSection'
+import NitrogenoSection from '../pages/laboratorio_main_sections/NitrogenoSection'
 
 const router = createHashRouter([
   {
     path: '/',
     element: <MainLayout />,
     children: [
-      { index: true, element: <Navigate to="/laboratorio" replace /> },
+      { index: true, element: <Navigate to="/laboratorio/general" replace /> },
       {
         path: 'laboratorio',
         element: <LaboratorioPage />,
         children: [
-          {
-            index: true,
-            element: (
-              <div className="p-6 text-lg text-center text-gray-500 rounded-md bg-white shadow">
-                Bienvenido al módulo de Laboratorio. <br /> Por favor, define un "Ciclo Activo"
-                usando el gestor de arriba y luego selecciona una etapa del menú de etapas.
-              </div>
-            )
-          },
-          { path: 'materia_prima', element: <MateriaPrimaSection /> }, // <--- AÑADE RUTA
-          { path: 'gubys', element: <GubysSection /> },
-          { path: 'cenizas', element: <CenizasSection /> },
-          { path: 'tamo_humedo', element: <TamoHumedoSection /> } // <--- AÑADE RUTA
+          { index: true, element: <Navigate to="general" replace /> },
+          { path: 'general', element: <LaboratorioGeneralSection /> },
+          { path: 'nitrogeno', element: <NitrogenoSection /> },
+          { path: 'cenizas', element: <CenizasSection /> }
         ]
       },
-      { path: 'formulacion', element: <FormulacionPage /> },
-      { path: 'informes', element: <InformesPage /> }
+      {
+        path: 'gestion-ciclos', // <--- NUEVA RUTA PRINCIPAL
+        element: <GestionCiclosPage />
+      },
+      {
+        path: 'formulacion',
+        element: <FormulacionPage />
+      },
+      {
+        path: 'informes',
+        element: <InformesPage />
+      },
+      {
+        path: 'gestion-catalogos',
+        element: <GestionCatalogosPage />
+      }
     ]
   }
 ])
