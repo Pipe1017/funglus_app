@@ -1,84 +1,31 @@
 // src/renderer/src/config/dropdownOptions.js
+// Este archivo ahora es menos crucial si IdentificadoresSelectForm carga
+// todas las Etapas, Muestras y Origenes directamente del backend
+// y no implementamos filtrado jerárquico complejo aquí.
+// Sin embargo, lo mantenemos por si se necesita lógica específica de opciones por etapa en el futuro.
 
-export const materiaPrimaOptions = {
-  muestra: [
-    { value: '', label: '-- Selecciona Muestra MP --' },
-    { value: 'TAMO', label: 'Tamo' },
-    { value: 'CASCARILLA', label: 'Cascarilla' },
-    { value: 'GALLINAZA', label: 'Gallinaza' },
-    { value: 'BAGAZO', label: 'Bagazo' }
-  ],
-  origen: {
-    // Las opciones de origen dependen de la muestra seleccionada
-    TAMO: [
-      { value: '', label: '-- Origen para Tamo --' },
-      { value: 'BODEGA', label: 'Bodega' },
-      { value: 'CAMION1', label: 'Camión 1' },
-      { value: 'CAMION2', label: 'Camión 2' },
-      { value: 'CAMION3', label: 'Camión 3' },
-      { value: 'CAMION4', label: 'Camión 4' }
-    ],
-    CASCARILLA: [
-      { value: '', label: '-- Origen para Cascarilla --' },
-      { value: 'BODEGA', label: 'Bodega' },
-      { value: 'CAMION1', label: 'Camión 1' }
-    ],
-    GALLINAZA: [
-      { value: '', label: '-- Origen para Gallinaza --' },
-      { value: 'BODEGA', label: 'Bodega' },
-      { value: 'CAMION1', label: 'Camión 1' },
-      { value: 'CAMION2', label: 'Camión 2' }
-    ],
-    BAGAZO: [
-      { value: '', label: '-- Origen para Bagazo --' },
-      { value: 'BODEGA', label: 'Bodega' },
-      { value: 'CARMEN', label: 'Carmen' },
-      { value: 'YALI', label: 'Yali' },
-      { value: 'S.C', label: 'S.C' }
-    ],
-    DEFAULT: [{ value: '', label: '-- Selecciona muestra primero --' }] // Opciones por defecto si no hay muestra
-  }
+export const materiaPrimaMuestraOptionsForConfig = [
+  // Ejemplo, podría no usarse si cargamos todo
+  { value: '', label: '-- Selecciona Muestra (MP) --' },
+  { value: 'TAMO', label: 'Tamo' }, // Estos 'value' son NOMBRES, necesitaríamos mapearlos a IDs
+  { value: 'CASCARILLA', label: 'Cascarilla' }
+  // ...
+]
+
+// Podríamos tener un objeto que defina si Muestra u Origen son obligatorios para una etapa,
+// pero la obligatoriedad principal la definirá el usuario al interactuar con los selectores.
+// El backend espera IDs, y si un selector se deja en "-- Selecciona --" (value=''),
+// enviaremos null para ese ID.
+
+export const etapaRequiresMuestra = (etapaNameKey) => {
+  // Define aquí qué etapas SIEMPRE requieren una Muestra (no puede ser N/A)
+  // Por defecto, asumimos que puede ser N/A (no seleccionada)
+  const etapasQueRequierenMuestra = ['materia_prima', 'formulacion'] // Ejemplo
+  return etapasQueRequierenMuestra.includes(etapaNameKey)
 }
 
-export const tamoHumedoOptions = {
-  origen: [
-    { value: '', label: '-- Origen Tamo Húmedo --' },
-    { value: 'VOLTEO1', label: 'Volteo 1' },
-    { value: 'VOLTEO2', label: 'Volteo 2' },
-    { value: 'VOLTEO3', label: 'Volteo 3' },
-    { value: 'VOLTEO4', label: 'Volteo 4' }
-  ]
-  // No tiene 'muestra' como desplegable según tu descripción
-}
-
-export const gubysOptions = {
-  origen: [
-    { value: '', label: '-- Origen Gubys --' },
-    { value: 'ENTRADA', label: 'Entrada' },
-    { value: 'SALIDA', label: 'Salida' }
-  ]
-  // No tiene 'muestra' como desplegable según tu descripción
-}
-// NUEVA SECCIÓN PARA FORMULACION
-export const formulacionOptions = {
-  muestra: [
-    // 'muestra' es clave para Formulacion
-    { value: '', label: '-- Selecciona Muestra Formulación --' },
-    { value: 'Lote A', label: 'Lote A Formulación' },
-    { value: 'Lote B', label: 'Lote B Formulación' },
-    { value: 'Estándar', label: 'Estándar Formulación' }
-  ],
-  origen: [
-    // 'origen' es un campo de datos para Formulacion, no clave
-    { value: '', label: '-- Origen Formulación --' },
-    { value: 'MP Combinada', label: 'MP Combinada' },
-    { value: 'Proceso Interno', label: 'Proceso Interno' }
-  ]
-}
-
-export const etapaDropdownOptions = {
-  materia_prima: materiaPrimaOptions,
-  tamo_humedo: tamoHumedoOptions,
-  gubys: gubysOptions,
-  formulacion: formulacionOptions // <--- AÑADIDO
+export const etapaRequiresOrigen = (etapaNameKey) => {
+  // Define aquí qué etapas SIEMPRE requieren un Origen
+  const etapasQueRequierenOrigen = ['materia_prima', 'gubys', 'tamo_humedo'] // Ejemplo
+  return etapasQueRequierenOrigen.includes(etapaNameKey)
 }

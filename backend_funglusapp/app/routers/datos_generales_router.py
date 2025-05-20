@@ -39,35 +39,41 @@ def get_or_create_datos_generales(
 
 @router.put("/entry", response_model=schemas.DatosGeneralesInDB)
 def update_datos_generales(
-    payload: schemas.DatosGeneralesUpdatePayload,  # Recibe claves y datos a actualizar
+    payload: schemas.DatosGeneralesUpdatePayload,
     db: Session = Depends(database.get_db),
 ):
-    """
-    Actualiza una entrada existente en DatosGeneralesLaboratorio.
-    El payload debe contener las claves (ciclo_id, etapa_id, muestra_id, origen_id)
-    y los campos de metadatos a actualizar.
-    """
-    keys_data = schemas.DatosGeneralesKeys(
-        ciclo_id=payload.ciclo_id,
-        etapa_id=payload.etapa_id,
-        muestra_id=payload.muestra_id,
-        origen_id=payload.origen_id,
-    )
-    # Extraer solo los campos de metadata del payload para la actualización
-    metadata_to_update_dict = payload.model_dump(
-        exclude={"ciclo_id", "etapa_id", "muestra_id", "origen_id"}, exclude_unset=True
-    )
-    metadata_update_schema = schemas.DatosGeneralesUpdate(**metadata_to_update_dict)
-
-    updated_entry = crud.update_datos_generales_entry(
-        db=db, keys=keys_data, data_update=metadata_update_schema
-    )
-    if not updated_entry:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Entrada de Datos Generales no encontrada para actualizar (claves no coinciden).",
+    """Endpoint actualizado con manejo flexible de claves"""
+    try:
+        # Convertir None a 0 para claves requeridas
+        keys_data = schemas.DatosGeneralesKeys(
+            ciclo_id=payload.ciclo_id,
+            etapa_id=payload.etapa_id,
+            muestra_id=payload.muestra_id if payload.muestra_id is not None else 0,
+            origen_id=payload.origen_id if payload.origen_id is not None else 0,
         )
-    return updated_entry
+
+        # Extraer solo campos de metadata
+        update_data = payload.dict(
+            exclude={"ciclo_id", "etapa_id", "muestra_id", "origen_id"},
+            exclude_unset=True,
+        )
+
+        updated_entry = crud.update_datos_generales_entry(
+            db=db,
+            keys=keys_data,
+            data_update=schemas.DatosGeneralesUpdate(**update_data),
+        )
+
+        if not updated_entry:
+            raise HTTPException(
+                status_code=404,
+                detail="Entrada no encontrada con las claves proporcionadas",
+            )
+
+        return updated_entry
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al actualizar: {str(e)}")
 
 
 @router.get("/ciclo/{ciclo_id_int}", response_model=List[schemas.DatosGeneralesInDB])
