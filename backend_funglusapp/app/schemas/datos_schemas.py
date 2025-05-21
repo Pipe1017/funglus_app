@@ -1,67 +1,51 @@
 # backend_funglusapp/app/schemas/datos_schemas.py
 from typing import List, Optional
 
+# Importa los schemas InDB de tus catálogos
+from app.schemas.catalogo_schemas import (  # Ajusta si el nombre es diferente
+    EtapaInDB,
+    MuestraInDB,
+    OrigenInDB,
+)
 from pydantic import BaseModel, Field
 
 # --- DatosGeneralesLaboratorio Schemas ---
 
 
 class DatosGeneralesKeys(BaseModel):
-    """Claves para identificar una entrada única en DatosGeneralesLaboratorio."""
-
     ciclo_id: int
     etapa_id: int
     muestra_id: int
     origen_id: int
 
 
-class DatosGeneralesMetadataBase(
-    BaseModel
-):  # Cambiado de ...Update a ...Base para claridad
-    """Campos de metadatos base que pueden ser enviados o recibidos."""
-
+class DatosGeneralesMetadataBase(BaseModel):
     fecha_ingreso: Optional[str] = None
     fecha_procesamiento: Optional[str] = None
-
     peso_h1_g: Optional[float] = None
     peso_h2_g: Optional[float] = None
-    humedad_1_porc: Optional[float] = None  # H1%
-    humedad_2_porc: Optional[float] = None  # H2%
-    # humedad_prom_porc es calculado en el backend
-
+    humedad_1_porc: Optional[float] = None
+    humedad_2_porc: Optional[float] = None
     peso_ph_g: Optional[float] = None
     ph_valor: Optional[float] = None
-
     fdr_1_kgf: Optional[float] = None
     fdr_2_kgf: Optional[float] = None
     fdr_3_kgf: Optional[float] = None
-    # fdr_prom_kgf es calculado en el backend
-
     resultado_cenizas_porc: Optional[float] = None
     resultado_nitrogeno_total_porc: Optional[float] = None
     resultado_nitrogeno_seca_porc: Optional[float] = None
-
-    # Añade aquí más campos de metadatos según tu tabla "TABLA GENERAL"
-    # Ejemplo:
-    # temperatura_max: Optional[float] = None
-    # observaciones_generales: Optional[str] = None
+    # observaciones_generales: Optional[str] = None  # Si lo tienes en tu modelo y lo quieres
 
 
 class DatosGeneralesCreate(DatosGeneralesKeys):
-    """Schema para el cuerpo de la petición POST /entry (get_or_create)."""
-
     pass
 
 
 class DatosGeneralesUpdatePayload(DatosGeneralesKeys, DatosGeneralesMetadataBase):
-    """Schema para el cuerpo de la petición PUT /entry (update), combina claves y metadata."""
-
     pass
 
 
 class DatosGeneralesUpdate(DatosGeneralesMetadataBase):
-    """Schema para pasar solo los datos de metadata a la función CRUD de actualización."""
-
     pass
 
 
@@ -72,8 +56,16 @@ class DatosGeneralesInDB(DatosGeneralesKeys, DatosGeneralesMetadataBase):
     humedad_prom_porc: Optional[float] = None
     fdr_prom_kgf: Optional[float] = None
 
+    # --- Relaciones ---
+    etapa_ref: Optional[EtapaInDB] = None
+    muestra_ref: Optional[MuestraInDB] = None
+    origen_ref: Optional[OrigenInDB] = None
+    # Podrías añadir ciclo_ref también si necesitas el nombre del ciclo aquí:
+    # from app.schemas.catalogo_schemas import CicloInDB
+    # ciclo_ref: Optional[CicloInDB] = None
+
     class Config:
-        from_attributes = True
+        from_attributes = True  # Para Pydantic V2
 
 
 # --- DatosCenizas Schemas ---

@@ -2,7 +2,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiCheckSquare, FiFilter, FiRefreshCw } from 'react-icons/fi'
 
-const NA_VALUE_ID_STRING = '' // Usaremos string vacío para la opción "-- Selecciona --"
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'
+const NA_VALUE_ID_STRING = '' // Para la opción "-- Selecciona --"
 
 function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
   const [etapaOptions, setEtapaOptions] = useState([
@@ -24,9 +25,15 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
 
   const fetchDataForDropdowns = useCallback(async () => {
     if (!activeCicloId) {
-      setEtapaOptions([{ value: NA_VALUE_ID_STRING, label: '-- Selecciona Etapa --' }])
-      setMuestraOptions([{ value: NA_VALUE_ID_STRING, label: '-- Selecciona Muestra (o N/A) --' }])
-      setOrigenOptions([{ value: NA_VALUE_ID_STRING, label: '-- Selecciona Origen (o N/A) --' }])
+      setEtapaOptions([
+        { value: NA_VALUE_ID_STRING, label: '-- (Selecciona Ciclo Global Primero) --' }
+      ])
+      setMuestraOptions([
+        { value: NA_VALUE_ID_STRING, label: '-- (Selecciona Ciclo Global Primero) --' }
+      ])
+      setOrigenOptions([
+        { value: NA_VALUE_ID_STRING, label: '-- (Selecciona Ciclo Global Primero) --' }
+      ])
       return
     }
 
@@ -34,11 +41,20 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
     setLocalMessage({ text: 'Cargando opciones de catálogo...', type: 'info' })
     let success = true
     try {
-      const [etapasData, muestrasData, origenesData] = await Promise.all([
-        window.electronAPI.getAllEtapas({ limit: 1000 }),
-        window.electronAPI.getAllMuestras({ limit: 1000 }),
-        window.electronAPI.getAllOrigenes({ limit: 1000 })
+      const fetchOptions = { headers: { Accept: 'application/json' } }
+      const [etapasResponse, muestrasResponse, origenesResponse] = await Promise.all([
+        fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/?limit=1000`, fetchOptions),
+        fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/?limit=1000`, fetchOptions),
+        fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/?limit=1000`, fetchOptions)
       ])
+
+      if (!etapasResponse.ok) throw new Error(`Error Etapas: ${etapasResponse.statusText}`)
+      if (!muestrasResponse.ok) throw new Error(`Error Muestras: ${muestrasResponse.statusText}`)
+      if (!origenesResponse.ok) throw new Error(`Error Origenes: ${origenesResponse.statusText}`)
+
+      const etapasData = await etapasResponse.json()
+      const muestrasData = await muestrasResponse.json()
+      const origenesData = await origenesResponse.json()
 
       setEtapaOptions([
         { value: NA_VALUE_ID_STRING, label: '-- Selecciona Etapa --' },
@@ -54,7 +70,7 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
       ])
       setLocalMessage({ text: 'Opciones de catálogo cargadas.', type: 'success' })
     } catch (error) {
-      console.error('IdentificadoresSelectForm: Error cargando catálogos', error)
+      console.error('IdentificadoresSelectForm: Error cargando catálogos vía HTTP', error)
       setLocalMessage({ text: `Error al cargar opciones: ${error.message}`, type: 'error' })
       success = false
     } finally {
@@ -63,7 +79,7 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
         if (success && localMessage.type !== 'error') setLocalMessage({ text: '', type: '' })
       }, 3000)
     }
-  }, [activeCicloId])
+  }, [activeCicloId]) // Recargar si el ciclo activo cambia
 
   useEffect(() => {
     fetchDataForDropdowns()
@@ -116,8 +132,8 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
       muestraId: selectedMuestraId ? parseInt(selectedMuestraId) : null,
       origenId: selectedOrigenId ? parseInt(selectedOrigenId) : null,
       etapaNombre: etapaObj?.label,
-      muestraNombre: muestraObj?.label,
-      origenNombre: origenObj?.label
+      muestraNombre: muestraObj?.label, // Será undefined si selectedMuestraId es ''
+      origenNombre: origenObj?.label // Será undefined si selectedOrigenId es ''
     }
 
     console.log('IdentificadoresSelectForm: Confirmando claves:', confirmedKeys)
@@ -209,10 +225,9 @@ function IdentificadoresSelectForm({ onConfirm, onClear, activeCicloId }) {
             disabled={isLoading || !activeCicloId || !selectedEtapaId}
             className="block w-full px-3 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm disabled:opacity-60"
           >
-            {/* LÍNEA CORREGIDA: ELIMINADO UN ')' EXTRA AL FINAL */}
             {Array.isArray(origenOptions) &&
               origenOptions.map((opt) => (
-                <option key={opt.value || 'origen-na'} value={opt.value}>
+                <option key={opt.value || 'origen-empty'} value={opt.value}>
                   {opt.label}
                 </option>
               ))}

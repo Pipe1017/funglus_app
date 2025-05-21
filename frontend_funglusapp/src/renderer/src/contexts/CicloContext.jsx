@@ -2,37 +2,54 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 const CicloContext = createContext(undefined)
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1' // Define tu URL base de la API
 
 export function CicloProvider({ children }) {
-  const [currentCiclo, setCurrentCiclo] = useState('') // Sigue guardando el nombre_ciclo del ciclo activo
-  const [availableCiclos, setAvailableCiclos] = useState([]) // AHORA SERÁ UN ARRAY DE OBJETOS CICLO {id, nombre_ciclo, ...}
+  const [currentCiclo, setCurrentCiclo] = useState('')
+  const [availableCiclos, setAvailableCiclos] = useState([])
   const [isFetchingCiclos, setIsFetchingCiclos] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState('')
 
-  const fetchAvailableCicloObjects = useCallback(async () => {
-    // Renombrada
+  const fetchAvailableCiclosAPI = useCallback(async () => {
+    // Nombre correcto de la función
     setIsFetchingCiclos(true)
+    setFeedbackMessage('')
     try {
-      console.log('CicloContext: Solicitando lista de OBJETOS ciclo...')
-      // CAMBIO AQUÍ: Usamos getAllCiclos para obtener los objetos completos
-      const cicloObjects = await window.electronAPI.getAllCiclos({ limit: 1000 }) // Asume que esto devuelve [{id, nombre_ciclo, ...}]
-      setAvailableCiclos(cicloObjects || []) // Guardamos el array de objetos
-      console.log('CicloContext: OBJETOS ciclo recibidos:', cicloObjects)
+      console.log('CicloContext: Solicitando lista de OBJETOS ciclo vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/?limit=1000`)
+
+      if (!response.ok) {
+        let errorMsg = `Error HTTP ${response.status}: ${response.statusText}`
+        try {
+          const errorData = await response.json()
+          errorMsg = errorData.detail || errorMsg
+        } catch (e) {
+          /* No hacer nada si el cuerpo no es JSON */
+        }
+        throw new Error(errorMsg)
+      }
+
+      const cicloObjects = await response.json()
+      setAvailableCiclos(cicloObjects || [])
+      console.log('CicloContext: OBJETOS ciclo recibidos vía HTTP:', cicloObjects)
+      if (!cicloObjects || cicloObjects.length === 0) {
+        setFeedbackMessage(
+          "No hay ciclos creados en el sistema. Ve a 'Gestión de Ciclos' para añadir uno."
+        )
+      }
     } catch (error) {
-      console.error('CicloContext: Error al cargar OBJETOS ciclo:', error)
+      console.error('CicloContext: Error al cargar OBJETOS ciclo vía HTTP:', error)
       setFeedbackMessage(`Error al cargar lista de ciclos: ${error.message}`)
-      setTimeout(() => setFeedbackMessage(''), 5000)
     } finally {
       setIsFetchingCiclos(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchAvailableCicloObjects()
-  }, [fetchAvailableCicloObjects])
+    fetchAvailableCiclosAPI()
+  }, [fetchAvailableCiclosAPI])
 
   const selectCiclo = (nombreCiclo) => {
-    // Recibe y setea el nombre_ciclo
     const trimmedCicloNombre = nombreCiclo ? nombreCiclo.trim() : ''
     setCurrentCiclo(trimmedCicloNombre)
     setFeedbackMessage(
@@ -44,26 +61,27 @@ export function CicloProvider({ children }) {
     setTimeout(() => setFeedbackMessage(''), 3000)
   }
 
-  // Esta función podría ser útil si en algún lugar solo necesitas el ID del ciclo actual
   const getCurrentCicloId = useCallback(() => {
     if (!currentCiclo || !Array.isArray(availableCiclos)) return null
     const cicloObj = availableCiclos.find((c) => c.nombre_ciclo === currentCiclo)
     return cicloObj ? cicloObj.id : null
   }, [currentCiclo, availableCiclos])
 
+  // CORRECCIÓN AQUÍ:
   const refreshCiclos = useCallback(() => {
-    fetchAvailableCicloObjects()
-  }, [fetchAvailableCicloObjects])
+    fetchAvailableCiclosAPI() // Llamar a la función con el nombre correcto
+  }, [fetchAvailableCiclosAPI]) // Usar la función correcta en las dependencias
 
   const value = useMemo(
     () => ({
-      currentCiclo, // Nombre del ciclo activo
+      currentCiclo,
       selectCiclo,
-      availableCiclos, // Array de objetos ciclo {id, nombre_ciclo, ...}
+      availableCiclos,
       isFetchingCiclos,
       refreshCiclos,
       feedbackMessage,
-      getCurrentCicloId // Nueva función utilitaria
+      setFeedbackMessage,
+      getCurrentCicloId
     }),
     [
       currentCiclo,
@@ -73,7 +91,7 @@ export function CicloProvider({ children }) {
       feedbackMessage,
       getCurrentCicloId
     ]
-  )
+  ) // setFeedbackMessage no necesita estar en dependencias si es estable
 
   return <CicloContext.Provider value={value}>{children}</CicloContext.Provider>
 }

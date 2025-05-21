@@ -2,12 +2,12 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
 
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1' // URL base de tu API
+
 const initialEtapaFormState = {
-  id: null, // Para saber si estamos editando
-  nombre: '', // 'nombre' en lugar de 'nombre_ciclo'
+  id: null,
+  nombre: '',
   descripcion: ''
-  // La tabla 'Etapa' no tiene 'fecha_inicio' como 'Ciclo'
-  // Si tuviera otros campos (como fase_id), se añadirían aquí.
 }
 
 function EtapasManager() {
@@ -24,8 +24,13 @@ function EtapasManager() {
     setIsLoading(true)
     setError('')
     try {
-      console.log('EtapasManager: Solicitando todas las etapas...')
-      const data = await window.electronAPI.getAllEtapas() // API para Etapas
+      console.log('EtapasManager: Solicitando todas las etapas vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/?limit=1000`)
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+      const data = await response.json()
       console.log('EtapasManager: Etapas recibidas:', data)
       setEtapas(data || [])
     } catch (err) {
@@ -80,7 +85,13 @@ function EtapasManager() {
       setError('')
       setSuccessMessage('')
       try {
-        await window.electronAPI.deleteEtapa(etapaId) // API para Etapas
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${etapaId}`, {
+          method: 'DELETE'
+        })
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ detail: response.statusText }))
+          throw new Error(errData.detail || `Error HTTP ${response.status}`)
+        }
         setSuccessMessage(`Etapa "${etapaNombre}" borrada exitosamente.`)
         fetchEtapas()
       } catch (err) {
@@ -107,19 +118,34 @@ function EtapasManager() {
     setSuccessMessage('')
 
     const payload = {
-      // Schema CatalogoSimpleCreate o CatalogoSimpleUpdate
-      nombre: formData.nombre,
-      descripcion: formData.descripcion || null
+      nombre: formData.nombre.trim(),
+      descripcion: formData.descripcion.trim() || null
     }
 
     try {
+      let response
       if (isEditing && formData.id) {
-        await window.electronAPI.updateEtapa(formData.id, payload) // API para Etapas
-        setSuccessMessage('Etapa actualizada exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       } else {
-        await window.electronAPI.createEtapa(payload) // API para Etapas
-        setSuccessMessage('Etapa creada exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+
+      setSuccessMessage(
+        isEditing ? 'Etapa actualizada exitosamente.' : 'Etapa creada exitosamente.'
+      )
       resetForm()
       fetchEtapas()
     } catch (err) {
@@ -139,24 +165,27 @@ function EtapasManager() {
       <button
         onClick={handleAddNew}
         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
-        disabled={isLoading}
+        disabled={isLoading || isFormVisible}
       >
         <FiPlusCircle className="mr-2" /> Añadir Nueva Etapa
       </button>
 
       {isFormVisible && (
-        <form onSubmit={handleSubmit} className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3">
-          <h3 className="text-lg font-medium mb-2">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
+        >
+          <h3 className="text-lg font-medium mb-2 text-gray-800">
             {isEditing ? 'Editar Etapa' : 'Crear Nueva Etapa'}
           </h3>
           <div>
-            <label htmlFor="etapa_nombre" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="etapa_nombre_form" className="block text-sm font-medium text-gray-700">
               Nombre de la Etapa:
             </label>
             <input
               type="text"
               name="nombre"
-              id="etapa_nombre"
+              id="etapa_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -164,19 +193,21 @@ function EtapasManager() {
             />
           </div>
           <div>
-            <label htmlFor="etapa_descripcion" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="etapa_descripcion_form"
+              className="block text-sm font-medium text-gray-700"
+            >
               Descripción (Opcional):
             </label>
-            <input
-              type="text"
+            <textarea
               name="descripcion"
-              id="etapa_descripcion"
+              id="etapa_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
+              rows="3"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          {/* Si Etapa tuviera más campos (ej. fase_id como un select), se añadirían aquí */}
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
@@ -228,7 +259,6 @@ function EtapasManager() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Descripción
                 </th>
-                {/* Si Etapa tuviera más campos (ej. Fase), se añadirían aquí */}
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
@@ -242,7 +272,7 @@ function EtapasManager() {
                     {etapa.nombre}
                   </td>
                   <td
-                    className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 max-w-xs truncate"
+                    className="px-4 py-3 text-sm text-gray-500 max-w-md truncate"
                     title={etapa.descripcion}
                   >
                     {etapa.descripcion || '-'}

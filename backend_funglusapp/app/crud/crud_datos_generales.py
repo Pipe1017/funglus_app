@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.db import models  # Tus modelos SQLAlchemy
 from app.schemas import datos_schemas as schemas  # Tus schemas Pydantic para datos
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 # --- CRUD para DatosGeneralesLaboratorio ---
 
@@ -173,19 +173,27 @@ def update_datos_generales_entry(
 def get_datos_generales_by_ciclo(
     db: Session, ciclo_id: int, skip: int = 0, limit: int = 100
 ) -> List[models.DatosGeneralesLaboratorio]:
-    """Obtiene todas las entradas de DatosGeneralesLaboratorio para un ciclo_id específico."""
-    return (
+    """
+    Obtiene todas las entradas de DatosGeneralesLaboratorio para un ciclo_id específico,
+    incluyendo los datos relacionados de etapa, muestra y origen.
+    """
+    query = (
         db.query(models.DatosGeneralesLaboratorio)
+        .options(
+            joinedload(models.DatosGeneralesLaboratorio.etapa_ref),
+            joinedload(models.DatosGeneralesLaboratorio.muestra_ref),
+            joinedload(models.DatosGeneralesLaboratorio.origen_ref),
+            # Si añadiste ciclo_ref al Pydantic schema, también añádelo aquí:
+            # joinedload(models.DatosGeneralesLaboratorio.ciclo_ref)
+        )
         .filter(models.DatosGeneralesLaboratorio.ciclo_id == ciclo_id)
         .order_by(
             models.DatosGeneralesLaboratorio.etapa_id,
             models.DatosGeneralesLaboratorio.muestra_id,
             models.DatosGeneralesLaboratorio.origen_id,
         )
-        .offset(skip)
-        .limit(limit)
-        .all()
     )
+    return query.offset(skip).limit(limit).all()
 
 
 def delete_datos_generales_entry(

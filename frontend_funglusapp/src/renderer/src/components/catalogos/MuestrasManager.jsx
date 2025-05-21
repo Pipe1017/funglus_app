@@ -2,6 +2,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
 
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1' // URL base de tu API
+
 const initialMuestraFormState = {
   id: null,
   nombre: '',
@@ -22,8 +24,13 @@ function MuestrasManager() {
     setIsLoading(true)
     setError('')
     try {
-      console.log('MuestrasManager: Solicitando todas las muestras...')
-      const data = await window.electronAPI.getAllMuestras({ skip: 0, limit: 1000 }) // Aumentar límite si es necesario
+      console.log('MuestrasManager: Solicitando todas las muestras vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/?limit=1000`)
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+      const data = await response.json()
       console.log('MuestrasManager: Muestras recibidas:', data)
       setMuestras(data || [])
     } catch (err) {
@@ -78,7 +85,13 @@ function MuestrasManager() {
       setError('')
       setSuccessMessage('')
       try {
-        await window.electronAPI.deleteMuestra(muestraId)
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${muestraId}`, {
+          method: 'DELETE'
+        })
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ detail: response.statusText }))
+          throw new Error(errData.detail || `Error HTTP ${response.status}`)
+        }
         setSuccessMessage(`Muestra "${muestraNombre}" borrada exitosamente.`)
         fetchMuestras()
       } catch (err) {
@@ -105,18 +118,34 @@ function MuestrasManager() {
     setSuccessMessage('')
 
     const payload = {
-      nombre: formData.nombre,
-      descripcion: formData.descripcion || null
+      nombre: formData.nombre.trim(),
+      descripcion: formData.descripcion.trim() || null
     }
 
     try {
+      let response
       if (isEditing && formData.id) {
-        await window.electronAPI.updateMuestra(formData.id, payload)
-        setSuccessMessage('Muestra actualizada exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       } else {
-        await window.electronAPI.createMuestra(payload)
-        setSuccessMessage('Muestra creada exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+
+      setSuccessMessage(
+        isEditing ? 'Muestra actualizada exitosamente.' : 'Muestra creada exitosamente.'
+      )
       resetForm()
       fetchMuestras()
     } catch (err) {
@@ -150,13 +179,16 @@ function MuestrasManager() {
             {isEditing ? 'Editar Muestra' : 'Crear Nueva Muestra'}
           </h3>
           <div>
-            <label htmlFor="muestra_nombre" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="muestra_nombre_form"
+              className="block text-sm font-medium text-gray-700"
+            >
               Nombre de la Muestra:
             </label>
             <input
               type="text"
               name="nombre"
-              id="muestra_nombre"
+              id="muestra_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -165,14 +197,14 @@ function MuestrasManager() {
           </div>
           <div>
             <label
-              htmlFor="muestra_descripcion"
+              htmlFor="muestra_descripcion_form"
               className="block text-sm font-medium text-gray-700"
             >
               Descripción (Opcional):
             </label>
             <textarea
               name="descripcion"
-              id="muestra_descripcion"
+              id="muestra_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
               rows="3"

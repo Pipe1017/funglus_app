@@ -2,8 +2,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
 
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1' // URL base de tu API
+
 const initialCicloFormState = {
-  id: null, // Para saber si estamos editando
+  id: null,
   nombre_ciclo: '',
   descripcion: '',
   fecha_inicio: ''
@@ -23,7 +25,14 @@ function CiclosManager() {
     setIsLoading(true)
     setError('')
     try {
-      const data = await window.electronAPI.getAllCiclos()
+      console.log('CiclosManager: Solicitando todos los ciclos vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/?limit=1000`) // GET all
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+      const data = await response.json()
+      console.log('CiclosManager: Ciclos recibidos:', data)
       setCiclos(data || [])
     } catch (err) {
       setError(`Error al cargar ciclos: ${err.message}`)
@@ -71,17 +80,23 @@ function CiclosManager() {
   const handleDelete = async (cicloId, cicloNombre) => {
     if (
       window.confirm(
-        `¿Estás seguro de que quieres borrar el ciclo "${cicloNombre}" (ID: ${cicloId})? Esto no se puede deshacer.`
+        `¿Estás seguro de que quieres borrar el ciclo "${cicloNombre}" (ID: ${cicloId})?`
       )
     ) {
       setIsLoading(true)
       setError('')
       setSuccessMessage('')
       try {
-        await window.electronAPI.deleteCiclo(cicloId)
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/${cicloId}`, {
+          method: 'DELETE'
+        })
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ detail: response.statusText }))
+          throw new Error(errData.detail || `Error HTTP ${response.status}`)
+        }
+        // const result = await response.json(); // DELETE suele devolver 200 OK con mensaje o 204 No Content
         setSuccessMessage(`Ciclo "${cicloNombre}" borrado exitosamente.`)
-        fetchCiclos() // Refrescar la lista
-        // También deberías llamar a refreshCiclos del CicloContext si este componente lo usa para la lista global
+        fetchCiclos()
       } catch (err) {
         setError(`Error al borrar ciclo: ${err.message}`)
         console.error('Error deleting ciclo:', err)
@@ -106,22 +121,41 @@ function CiclosManager() {
     setSuccessMessage('')
 
     const payload = {
-      nombre_ciclo: formData.nombre_ciclo,
-      descripcion: formData.descripcion || null, // Enviar null si está vacío
+      nombre_ciclo: formData.nombre_ciclo.trim(),
+      descripcion: formData.descripcion.trim() || null,
       fecha_inicio: formData.fecha_inicio || null
     }
 
     try {
+      let response
       if (isEditing && formData.id) {
-        await window.electronAPI.updateCiclo(formData.id, payload)
-        setSuccessMessage('Ciclo actualizado exitosamente.')
+        console.log('CiclosManager: Actualizando ciclo vía HTTP:', formData.id, payload)
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       } else {
-        await window.electronAPI.createCiclo(payload)
-        setSuccessMessage('Ciclo creado exitosamente.')
+        console.log('CiclosManager: Creando nuevo ciclo vía HTTP:', payload)
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        // Si el error es por nombre duplicado (400 Bad Request), el backend ya lo maneja
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+
+      // const result = await response.json(); // El backend devuelve el objeto creado/actualizado
+      setSuccessMessage(
+        isEditing ? 'Ciclo actualizado exitosamente.' : 'Ciclo creado exitosamente.'
+      )
       resetForm()
       fetchCiclos()
-      // También deberías llamar a refreshCiclos del CicloContext si este componente lo usa
     } catch (err) {
       setError(`Error al guardar ciclo: ${err.message}`)
       console.error('Error saving ciclo:', err)
@@ -135,18 +169,24 @@ function CiclosManager() {
   }
 
   return (
+    // El JSX del return (formulario y tabla) no necesita cambios significativos,
+    // ya que la lógica de estado y los handlers son los mismos.
+    // Solo asegúrate de que todos los campos y botones funcionen como antes.
     <div className="space-y-4">
       <button
         onClick={handleAddNew}
-        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-        disabled={isLoading}
+        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
+        disabled={isLoading || isFormVisible}
       >
         <FiPlusCircle className="mr-2" /> Añadir Nuevo Ciclo
       </button>
 
       {isFormVisible && (
-        <form onSubmit={handleSubmit} className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3">
-          <h3 className="text-lg font-medium">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
+        >
+          <h3 className="text-lg font-medium mb-2 text-gray-800">
             {isEditing ? 'Editar Ciclo' : 'Crear Nuevo Ciclo'}
           </h3>
           <div>
@@ -189,11 +229,11 @@ function CiclosManager() {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
             >
               <FiSave className="mr-2" />{' '}
               {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Ciclo' : 'Crear Ciclo'}
@@ -202,7 +242,7 @@ function CiclosManager() {
               type="button"
               onClick={resetForm}
               disabled={isLoading}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 flex items-center"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 flex items-center text-sm"
             >
               <FiXCircle className="mr-2" /> Cancelar
             </button>
@@ -210,34 +250,40 @@ function CiclosManager() {
         </form>
       )}
 
-      {error && <p className="mt-2 text-sm text-red-600 bg-red-100 p-2 rounded-md">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm text-red-600 bg-red-100 p-3 rounded-md border border-red-300">
+          {error}
+        </p>
+      )}
       {successMessage && (
-        <p className="mt-2 text-sm text-green-600 bg-green-100 p-2 rounded-md">{successMessage}</p>
+        <p className="mt-2 text-sm text-green-600 bg-green-100 p-3 rounded-md border border-green-300">
+          {successMessage}
+        </p>
       )}
 
       <div className="mt-6 overflow-x-auto">
-        <h3 className="text-lg font-medium mb-2">Ciclos Existentes</h3>
-        {isLoading && <p>Cargando ciclos...</p>}
+        <h3 className="text-lg font-medium mb-2 text-gray-700">Ciclos Existentes</h3>
+        {isLoading && <p className="text-sm text-gray-500 italic">Cargando ciclos...</p>}
         {!isLoading && ciclos.length === 0 && (
-          <p className="text-gray-500">No hay ciclos creados todavía.</p>
+          <p className="text-sm text-gray-500">No hay ciclos creados todavía.</p>
         )}
         {!isLoading && ciclos.length > 0 && (
-          <table className="min-w-full divide-y divide-gray-200 border">
-            <thead className="bg-gray-100">
+          <table className="min-w-full divide-y divide-gray-200 border shadow-sm rounded-lg">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  ID (DB)
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  ID
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Nombre Ciclo
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Descripción
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Fecha Inicio
                 </th>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
@@ -245,30 +291,33 @@ function CiclosManager() {
             <tbody className="bg-white divide-y divide-gray-200">
               {ciclos.map((ciclo) => (
                 <tr key={ciclo.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{ciclo.id}</td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{ciclo.id}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                     {ciclo.nombre_ciclo}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                  <td
+                    className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate"
+                    title={ciclo.descripcion}
+                  >
                     {ciclo.descripcion || '-'}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                     {ciclo.fecha_inicio || '-'}
                   </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm space-x-2">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm space-x-2">
                     <button
                       onClick={() => handleEdit(ciclo)}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-indigo-600 hover:text-indigo-900 p-1"
                       title="Editar"
                     >
-                      <FiEdit />
+                      <FiEdit size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(ciclo.id, ciclo.nombre_ciclo)}
-                      className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900 p-1"
                       title="Borrar"
                     >
-                      <FiTrash2 />
+                      <FiTrash2 size={16} />
                     </button>
                   </td>
                 </tr>

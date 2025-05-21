@@ -2,6 +2,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
 
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'
+
 const initialOrigenFormState = {
   id: null,
   nombre: '',
@@ -22,8 +24,13 @@ function OrigenesManager() {
     setIsLoading(true)
     setError('')
     try {
-      console.log('OrigenesManager: Solicitando todos los origenes...')
-      const data = await window.electronAPI.getAllOrigenes({ skip: 0, limit: 1000 })
+      console.log('OrigenesManager: Solicitando todos los origenes vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/?limit=1000`)
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+      const data = await response.json()
       console.log('OrigenesManager: Origenes recibidos:', data)
       setOrigenes(data || [])
     } catch (err) {
@@ -78,7 +85,13 @@ function OrigenesManager() {
       setError('')
       setSuccessMessage('')
       try {
-        await window.electronAPI.deleteOrigen(origenId)
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${origenId}`, {
+          method: 'DELETE'
+        })
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({ detail: response.statusText }))
+          throw new Error(errData.detail || `Error HTTP ${response.status}`)
+        }
         setSuccessMessage(`Origen "${origenNombre}" borrado exitosamente.`)
         fetchOrigenes()
       } catch (err) {
@@ -105,18 +118,34 @@ function OrigenesManager() {
     setSuccessMessage('')
 
     const payload = {
-      nombre: formData.nombre,
-      descripcion: formData.descripcion || null
+      nombre: formData.nombre.trim(),
+      descripcion: formData.descripcion.trim() || null
     }
 
     try {
+      let response
       if (isEditing && formData.id) {
-        await window.electronAPI.updateOrigen(formData.id, payload)
-        setSuccessMessage('Origen actualizado exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${formData.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       } else {
-        await window.electronAPI.createOrigen(payload)
-        setSuccessMessage('Origen creado exitosamente.')
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
       }
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
+      }
+
+      setSuccessMessage(
+        isEditing ? 'Origen actualizado exitosamente.' : 'Origen creado exitosamente.'
+      )
       resetForm()
       fetchOrigenes()
     } catch (err) {
@@ -150,13 +179,13 @@ function OrigenesManager() {
             {isEditing ? 'Editar Origen' : 'Crear Nuevo Origen'}
           </h3>
           <div>
-            <label htmlFor="origen_nombre" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="origen_nombre_form" className="block text-sm font-medium text-gray-700">
               Nombre del Origen:
             </label>
             <input
               type="text"
               name="nombre"
-              id="origen_nombre"
+              id="origen_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -164,12 +193,15 @@ function OrigenesManager() {
             />
           </div>
           <div>
-            <label htmlFor="origen_descripcion" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="origen_descripcion_form"
+              className="block text-sm font-medium text-gray-700"
+            >
               Descripción (Opcional):
             </label>
             <textarea
               name="descripcion"
-              id="origen_descripcion"
+              id="origen_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
               rows="3"

@@ -29,6 +29,7 @@ def create_new_ciclo(
     return crud.create_ciclo(db=db, ciclo=ciclo)
 
 
+# En catalogo_router.py o ciclos_crud_router.py
 @router.get("/ciclos/", response_model=List[schemas.CicloInDB])
 def read_ciclos(
     skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db)
