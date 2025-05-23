@@ -124,3 +124,83 @@ def delete_datos_generales(
             detail="Entrada de Datos Generales no encontrada para borrar.",
         )
     return {"message": "Entrada de Datos Generales borrada exitosamente"}
+
+
+# --- ¡NUEVO ENDPOINT! ---
+@router.post(
+    "/get_by_keys",  # Usamos POST para poder enviar las claves en el cuerpo
+    response_model=Optional[
+        schemas.DatosGeneralesInDB
+    ],  # Puede devolver la entrada o nada (None)
+    summary="Obtener una entrada de Datos Generales por sus claves (solo lectura)",
+)
+def get_datos_generales_by_keys_endpoint(
+    keys: schemas.DatosGeneralesKeys,  # Recibe ciclo_id, etapa_id, muestra_id, origen_id
+    db: Session = Depends(database.get_db),
+):
+    """
+    Obtiene una entrada de DatosGeneralesLaboratorio existente basada en sus claves.
+    Si no existe, devuelve null (o FastAPI podría convertirlo en un 200 con cuerpo null,
+    o podríamos forzar un 404 si es preferible).
+    No crea una entrada si no se encuentra.
+    """
+    if not all([keys.ciclo_id, keys.etapa_id, keys.muestra_id, keys.origen_id]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Todas las claves (ciclo_id, etapa_id, muestra_id, origen_id) son requeridas para la búsqueda.",
+        )
+
+    db_entry = crud.get_datos_generales_entry(  # Esta es tu función CRUD que solo obtiene, no crea
+        db,
+        ciclo_id=keys.ciclo_id,
+        etapa_id=keys.etapa_id,
+        muestra_id=keys.muestra_id,
+        origen_id=keys.origen_id,
+    )
+
+    if db_entry is None:
+        # Opción 1: Devolver null y que el frontend interprete (FastAPI podría devolver 200 con cuerpo null)
+        return None
+        # Opción 2: Devolver explícitamente 404 si no se encuentra
+        # raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrada de Datos Generales no encontrada para las claves proporcionadas.")
+
+    # Asegurarse de que la respuesta incluya las referencias si el schema DatosGeneralesInDB las espera
+    # (esto depende de si get_datos_generales_entry hace eager loading o si Pydantic las carga)
+    # Por ahora, asumimos que get_datos_generales_entry devuelve el objeto con lo necesario
+    # o que el schema DatosGeneralesInDB está configurado para manejarlo (con from_attributes y relaciones cargadas).
+    # Si las refs no vienen, necesitaríamos cargar el objeto con eager loading aquí o en el CRUD.
+    # Por simplicidad, mantenemos esto así y el frontend verificará si la respuesta es null.
+    return db_entry
+
+
+@router.post(
+    "/get_by_keys",
+    response_model=schemas.DatosGeneralesInDB,  # Si se encuentra, devuelve el objeto
+    summary="Obtener una entrada de Datos Generales por sus claves (solo lectura)",
+)
+def get_datos_generales_by_keys_endpoint(
+    keys: schemas.DatosGeneralesKeys, db: Session = Depends(database.get_db)
+):
+    # ... (validación de keys) ...
+    if not all(
+        [keys.ciclo_id, keys.etapa_id, keys.muestra_id, keys.origen_id]
+    ):  # Asegúrate que Muestra y Origen sean siempre obligatorios
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Todas las claves (ciclo_id, etapa_id, muestra_id, origen_id) son requeridas para la búsqueda.",
+        )
+
+    db_entry = crud.get_datos_generales_entry(
+        db,
+        ciclo_id=keys.ciclo_id,
+        etapa_id=keys.etapa_id,
+        muestra_id=keys.muestra_id,
+        origen_id=keys.origen_id,
+    )
+
+    if db_entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Entrada de Datos Generales no encontrada para las claves proporcionadas.",
+        )
+    return db_entry

@@ -136,14 +136,10 @@ def _calculate_nitrogeno_valores(
     etapa_catalogo_id: int,
     muestra_catalogo_id: int,
     origen_catalogo_id: int,
-    peso_muestra_n_g: Optional[float],  # (a)
-    n_hcl_normalidad: Optional[float],  # (b)
-    vol_hcl_gastado_cm3: Optional[float],  # (c)
+    peso_muestra_n_g: Optional[float],
+    n_hcl_normalidad: Optional[float],
+    vol_hcl_gastado_cm3: Optional[float],
 ) -> Dict[str, Optional[float]]:
-    """
-    Helper para calcular los valores de nitrógeno y obtener H%.
-    Obtiene H% de DatosGeneralesLaboratorio (creando la entrada si no existe).
-    """
     resultados = {
         "calc_nitrogeno_organico_total_porc": None,
         "calc_humedad_usada_referencia_porc": None,
@@ -151,42 +147,47 @@ def _calculate_nitrogeno_valores(
         "calc_nitrogeno_base_seca_porc": None,
     }
 
-    # 1. Obtener H% de DatosGeneralesLaboratorio
-    # Esto también asegura que la entrada en DatosGeneralesLaboratorio exista
     keys_tabla_general = schemas_datos.DatosGeneralesKeys(
         ciclo_id=ciclo_catalogo_id,
         etapa_id=etapa_catalogo_id,
         muestra_id=muestra_catalogo_id,
         origen_id=origen_catalogo_id,
     )
-    # Usamos get_or_create para asegurar que la entrada exista
-    db_datos_generales = crud_datos_generales.get_or_create_datos_generales_entry(
-        db, keys=keys_tabla_general
+    # CAMBIO: Usar get_datos_generales_entry en lugar de get_or_create
+    db_datos_generales = crud_datos_generales.get_datos_generales_entry(
+        db,
+        ciclo_id=keys_tabla_general.ciclo_id,
+        etapa_id=keys_tabla_general.etapa_id,
+        muestra_id=keys_tabla_general.muestra_id,
+        origen_id=keys_tabla_general.origen_id,
     )
 
     humedad_prom_porc = None
     if db_datos_generales and db_datos_generales.humedad_prom_porc is not None:
         humedad_prom_porc = db_datos_generales.humedad_prom_porc
         resultados["calc_humedad_usada_referencia_porc"] = humedad_prom_porc
+    elif db_datos_generales is None:
+        # La entrada general no existe. H% es desconocido.
+        # El frontend debería haber prevenido esto si H% es mandatorio.
+        print(
+            f"Advertencia: No existe entrada en DatosGeneralesLaboratorio para claves {keys_tabla_general.model_dump()} al calcular N."
+        )
+        pass  # humedad_prom_porc sigue siendo None
 
-    # 2. Realizar cálculos de nitrógeno
+    # ... (resto de los cálculos de nitrógeno, que ya manejan humedad_prom_porc siendo None) ...
     a = peso_muestra_n_g
     b = n_hcl_normalidad
     c = vol_hcl_gastado_cm3
 
     if a is not None and a != 0 and b is not None and c is not None:
         try:
-            # Nitrógeno Orgánico Total [%] = (c * b * 1.4) / a
             n_org_total = (c * b * 1.4) / a
             resultados["calc_nitrogeno_organico_total_porc"] = round(n_org_total, 2)
 
-            if humedad_prom_porc is not None:
-                # Peso seco [g] (d) = a * (100 - H%) / 100
+            if humedad_prom_porc is not None:  # Solo calcular si H% existe
                 peso_seco = a * (100.0 - humedad_prom_porc) / 100.0
                 resultados["calc_peso_seco_g"] = round(peso_seco, 3)
-
                 if peso_seco != 0:
-                    # Nitrógeno base seca [%] = (c * b * 1.4) / d
                     n_base_seca = (c * b * 1.4) / peso_seco
                     resultados["calc_nitrogeno_base_seca_porc"] = round(n_base_seca, 2)
         except ZeroDivisionError:
@@ -200,10 +201,11 @@ def _calculate_nitrogeno_valores(
 def create_registro_nitrogeno(
     db: Session, registro_create: schemas_proc.RegistroAnalisisNitrogenoCreate
 ) -> models.RegistroAnalisisNitrogeno:
-    """
-    Crea un nuevo registro de análisis de nitrógeno.
-    Calcula los valores derivados y obtiene H% de la tabla general.
-    """
+    # La verificación de existencia de DatosGeneralesLaboratorio y la obtención de H%
+    # ahora está encapsulada en _calculate_nitrogeno_valores.
+    # Si el frontend permite continuar sin una entrada general existente (y por tanto sin H%),
+    # algunos campos calculados serán None.
+
     calculos = _calculate_nitrogeno_valores(
         db=db,
         ciclo_catalogo_id=registro_create.ciclo_catalogo_id,
@@ -214,7 +216,7 @@ def create_registro_nitrogeno(
         n_hcl_normalidad=registro_create.n_hcl_normalidad,
         vol_hcl_gastado_cm3=registro_create.vol_hcl_gastado_cm3,
     )
-
+    # ... (resto de la creación de db_registro y commit, como estaba) ...
     db_registro = models.RegistroAnalisisNitrogeno(
         ciclo_procesamiento_id=registro_create.ciclo_procesamiento_id,
         ciclo_catalogo_id=registro_create.ciclo_catalogo_id,
@@ -224,7 +226,7 @@ def create_registro_nitrogeno(
         peso_muestra_n_g=registro_create.peso_muestra_n_g,
         n_hcl_normalidad=registro_create.n_hcl_normalidad,
         vol_hcl_gastado_cm3=registro_create.vol_hcl_gastado_cm3,
-        **calculos,  # Desempaqueta los resultados calculados
+        **calculos,
     )
     db.add(db_registro)
     db.commit()
@@ -287,19 +289,13 @@ def update_registro_nitrogeno(
     registro_id: int,
     registro_update: schemas_proc.RegistroAnalisisNitrogenoUpdate,
 ) -> Optional[models.RegistroAnalisisNitrogeno]:
-    """
-    Actualiza un registro de análisis de nitrógeno existente.
-    Recalcula los valores si los inputs relevantes cambian.
-    """
     db_registro = get_registro_nitrogeno_by_id(
         db, registro_id, eager_load_catalogs=False
-    )  # No necesitamos los refs para actualizar
+    )
     if not db_registro:
         return None
 
     update_data = registro_update.model_dump(exclude_unset=True)
-
-    # Actualizar campos de input
     made_changes_to_inputs = False
     for key, value in update_data.items():
         if hasattr(db_registro, key) and getattr(db_registro, key) != value:
@@ -307,11 +303,13 @@ def update_registro_nitrogeno(
             if key in ["peso_muestra_n_g", "n_hcl_normalidad", "vol_hcl_gastado_cm3"]:
                 made_changes_to_inputs = True
 
-    # Si los inputs cambiaron, recalcular
     if made_changes_to_inputs:
+        # Re-verificar la existencia de la entrada general y H% es crucial si los IDs de catálogo pudieran cambiar (no lo hacen aquí)
+        # o si H% en la tabla general pudiera haber cambiado por otra acción.
+        # _calculate_nitrogeno_valores ya hace la consulta a DatosGeneralesLaboratorio.
         calculos = _calculate_nitrogeno_valores(
             db=db,
-            ciclo_catalogo_id=db_registro.ciclo_catalogo_id,  # Usar los IDs existentes del registro
+            ciclo_catalogo_id=db_registro.ciclo_catalogo_id,
             etapa_catalogo_id=db_registro.etapa_catalogo_id,
             muestra_catalogo_id=db_registro.muestra_catalogo_id,
             origen_catalogo_id=db_registro.origen_catalogo_id,
@@ -324,9 +322,6 @@ def update_registro_nitrogeno(
 
     db.commit()
     db.refresh(db_registro)
-    # Para devolver con refs, podríamos recargarlo con eager_load_catalogs=True, o confiar en que la sesión los cargue si el schema InDB los pide.
-    # Por consistencia con get_registro_nitrogeno_by_id, podemos hacer un segundo fetch si es necesario.
-    # O, más simple, la función de router puede llamar a get_registro_nitrogeno_by_id después de actualizar.
     return db_registro
 
 
@@ -430,3 +425,271 @@ def promediar_y_actualizar_nitrogeno_en_tabla_general(
     )
 
     return updated_general_entry is not None
+
+
+# --- ¡NUEVAS OPERACIONES CRUD PARA REGISTRO ANÁLISIS DE CENIZAS! ---
+
+
+def _calculate_cenizas_porc(
+    peso_crisol_vacio_g: Optional[float],  # (a)
+    peso_crisol_mas_muestra_g: Optional[float],  # (b)
+    peso_crisol_mas_cenizas_g: Optional[float],  # (c)
+) -> Optional[float]:
+    """
+    Helper para calcular el porcentaje de cenizas.
+    Fórmula: Cenizas [%] = ((c - a) / (b - a)) * 100
+    """
+    a = peso_crisol_vacio_g
+    b = peso_crisol_mas_muestra_g
+    c = peso_crisol_mas_cenizas_g
+
+    if a is not None and b is not None and c is not None:
+        denominador = b - a
+        if denominador != 0:
+            try:
+                cenizas_porc = ((c - a) / denominador) * 100
+                return round(cenizas_porc, 2)  # Redondear a 2 decimales
+            except Exception as e:
+                print(f"Error en el cálculo de cenizas: {e}")
+                return None
+        else:
+            print(
+                "Advertencia: División por cero (peso muestra es cero) al calcular cenizas."
+            )
+            return None
+    return None
+
+
+def create_registro_cenizas(
+    db: Session, registro_create: schemas_proc.RegistroAnalisisCenizasCreate
+) -> models.RegistroAnalisisCenizas:
+    # CAMBIO: Verificar primero si la entrada en DatosGeneralesLaboratorio existe.
+    # Si no existe, no se debería permitir crear el registro de cenizas.
+    db_datos_generales = crud_datos_generales.get_datos_generales_entry(
+        db,
+        ciclo_id=registro_create.ciclo_catalogo_id,
+        etapa_id=registro_create.etapa_catalogo_id,
+        muestra_id=registro_create.muestra_catalogo_id,
+        origen_id=registro_create.origen_catalogo_id,
+    )
+    if not db_datos_generales:
+        # Este error será capturado por el router y devuelto como HTTP 4xx/5xx
+        raise ValueError(
+            "No existe una entrada en la Tabla General para la combinación de catálogos seleccionada. "
+            "Por favor, créela primero en 'Laboratorio General'."
+        )
+
+    calc_cenizas = _calculate_cenizas_porc(
+        # ... (como estaba) ...
+        peso_crisol_vacio_g=registro_create.peso_crisol_vacio_g,
+        peso_crisol_mas_muestra_g=registro_create.peso_crisol_mas_muestra_g,
+        peso_crisol_mas_cenizas_g=registro_create.peso_crisol_mas_cenizas_g,
+    )
+    # ... (creación de db_registro_cenizas, try-except para commit, como estaba) ...
+    db_registro_cenizas = models.RegistroAnalisisCenizas(  # ... asignaciones ...
+        ciclo_procesamiento_id=registro_create.ciclo_procesamiento_id,
+        ciclo_catalogo_id=registro_create.ciclo_catalogo_id,
+        etapa_catalogo_id=registro_create.etapa_catalogo_id,
+        muestra_catalogo_id=registro_create.muestra_catalogo_id,
+        origen_catalogo_id=registro_create.origen_catalogo_id,
+        peso_crisol_vacio_g=registro_create.peso_crisol_vacio_g,
+        peso_crisol_mas_muestra_g=registro_create.peso_crisol_mas_muestra_g,
+        peso_crisol_mas_cenizas_g=registro_create.peso_crisol_mas_cenizas_g,
+        calc_cenizas_porc=calc_cenizas,
+    )
+    try:
+        db.add(db_registro_cenizas)
+        db.commit()
+        db.refresh(db_registro_cenizas)
+    except exc.IntegrityError as e:
+        db.rollback()
+        print(f"Error de Integridad al crear registro de cenizas: {e.orig}")
+        raise ValueError(
+            f"Ya existe un registro de cenizas para esta combinación de lote y catálogos. Detalle: {e.orig}"
+        )
+    except Exception as e:
+        db.rollback()
+        print(f"Error general al crear registro de cenizas: {e}")
+        raise
+
+    # Actualizar tabla general después de crear el registro de cenizas
+    if db_registro_cenizas.calc_cenizas_porc is not None:
+        actualizar_cenizas_en_tabla_general(
+            db=db,
+            ciclo_catalogo_id=db_registro_cenizas.ciclo_catalogo_id,
+            etapa_catalogo_id=db_registro_cenizas.etapa_catalogo_id,
+            muestra_catalogo_id=db_registro_cenizas.muestra_catalogo_id,
+            origen_catalogo_id=db_registro_cenizas.origen_catalogo_id,
+            resultado_cenizas_porc=db_registro_cenizas.calc_cenizas_porc,
+        )
+
+    return db_registro_cenizas
+
+
+def get_registro_cenizas_by_id(
+    db: Session, registro_id: int, eager_load_catalogs: bool = True
+) -> Optional[models.RegistroAnalisisCenizas]:
+    """
+    Obtiene un registro de análisis de cenizas por su ID.
+    """
+    query = db.query(models.RegistroAnalisisCenizas)
+    if eager_load_catalogs:
+        query = query.options(
+            joinedload(models.RegistroAnalisisCenizas.ciclo_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.etapa_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.muestra_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.origen_catalogo_ref),
+            # Opcional: joinedload(models.RegistroAnalisisCenizas.ciclo_procesamiento_ref)
+        )
+    return query.filter(models.RegistroAnalisisCenizas.id == registro_id).first()
+
+
+def get_registros_cenizas_by_ciclo_procesamiento_id(
+    db: Session,
+    ciclo_proc_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    eager_load_catalogs: bool = True,
+) -> List[models.RegistroAnalisisCenizas]:
+    """
+    Obtiene todos los registros de análisis de cenizas para un ciclo_procesamiento_id específico.
+    """
+    query = db.query(models.RegistroAnalisisCenizas)
+    if eager_load_catalogs:
+        query = query.options(
+            joinedload(models.RegistroAnalisisCenizas.ciclo_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.etapa_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.muestra_catalogo_ref),
+            joinedload(models.RegistroAnalisisCenizas.origen_catalogo_ref),
+        )
+    return (
+        query.filter(
+            models.RegistroAnalisisCenizas.ciclo_procesamiento_id == ciclo_proc_id
+        )
+        .order_by(models.RegistroAnalisisCenizas.id)  # O por otro campo como created_at
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def update_registro_cenizas(
+    db: Session,
+    registro_id: int,
+    registro_update: schemas_proc.RegistroAnalisisCenizasUpdate,
+) -> Optional[models.RegistroAnalisisCenizas]:
+    db_registro = get_registro_cenizas_by_id(db, registro_id, eager_load_catalogs=False)
+    if not db_registro:
+        return None
+
+    # Verificar que la entrada general exista (no debería ser necesario si no se pueden cambiar los IDs de catálogo aquí)
+    # db_datos_generales = crud_datos_generales.get_datos_generales_entry(...)
+    # if not db_datos_generales: raise ValueError("La entrada general asociada no existe.")
+
+    # ... (resto de la lógica de actualización de campos y recalculo como estaba) ...
+    # (y la llamada a actualizar_cenizas_en_tabla_general) ...
+    update_data = registro_update.model_dump(exclude_unset=True)
+    made_changes_to_inputs = False
+
+    for key, value in update_data.items():
+        if hasattr(db_registro, key) and getattr(db_registro, key) != value:
+            setattr(db_registro, key, value)
+            if key in [
+                "peso_crisol_vacio_g",
+                "peso_crisol_mas_muestra_g",
+                "peso_crisol_mas_cenizas_g",
+            ]:
+                made_changes_to_inputs = True
+
+    if made_changes_to_inputs:
+        calc_cenizas = _calculate_cenizas_porc(
+            peso_crisol_vacio_g=db_registro.peso_crisol_vacio_g,
+            peso_crisol_mas_muestra_g=db_registro.peso_crisol_mas_muestra_g,
+            peso_crisol_mas_cenizas_g=db_registro.peso_crisol_mas_cenizas_g,
+        )
+        db_registro.calc_cenizas_porc = calc_cenizas
+
+    try:
+        db.commit()
+        db.refresh(db_registro)
+    except exc.IntegrityError as e:
+        db.rollback()
+        print(
+            f"Error de Integridad al actualizar registro de cenizas {registro_id}: {e.orig}"
+        )
+        raise ValueError(
+            f"Error de integridad al actualizar registro de cenizas. Detalle: {e.orig}"
+        )
+    except Exception as e:
+        db.rollback()
+        print(f"Error general al actualizar registro de cenizas {registro_id}: {e}")
+        raise
+
+    if made_changes_to_inputs and db_registro.calc_cenizas_porc is not None:
+        actualizar_cenizas_en_tabla_general(
+            db=db,
+            ciclo_catalogo_id=db_registro.ciclo_catalogo_id,
+            etapa_catalogo_id=db_registro.etapa_catalogo_id,
+            muestra_catalogo_id=db_registro.muestra_catalogo_id,
+            origen_catalogo_id=db_registro.origen_catalogo_id,
+            resultado_cenizas_porc=db_registro.calc_cenizas_porc,
+        )
+    return db_registro
+
+
+def delete_registro_cenizas(db: Session, registro_id: int) -> bool:
+    """
+    Borra un registro de análisis de cenizas.
+    """
+    db_registro = get_registro_cenizas_by_id(db, registro_id, eager_load_catalogs=False)
+    if not db_registro:
+        return False
+    try:
+        db.delete(db_registro)
+        db.commit()
+        return True
+    except Exception as e:
+        db.rollback()
+        print(f"Error al borrar RegistroAnalisisCenizas {registro_id}: {e}")
+        return False
+
+
+# --- Lógica para Actualizar Resultado de Cenizas en Tabla General ---
+
+
+def actualizar_cenizas_en_tabla_general(
+    db: Session,
+    ciclo_catalogo_id: int,
+    etapa_catalogo_id: int,
+    muestra_catalogo_id: int,
+    origen_catalogo_id: int,
+    resultado_cenizas_porc: Optional[float],  # El valor calculado de calc_cenizas_porc
+) -> bool:
+    """
+    Actualiza el campo resultado_cenizas_porc en DatosGeneralesLaboratorio
+    para una combinación de catálogos específica.
+    """
+    keys_tabla_general = schemas_datos.DatosGeneralesKeys(
+        ciclo_id=ciclo_catalogo_id,
+        etapa_id=etapa_catalogo_id,
+        muestra_id=muestra_catalogo_id,
+        origen_id=origen_catalogo_id,
+    )
+    # Asegurar que la entrada general exista (aunque create_registro_cenizas ya debería haberlo hecho)
+    crud_datos_generales.get_or_create_datos_generales_entry(
+        db, keys=keys_tabla_general
+    )
+
+    datos_update_general = schemas_datos.DatosGeneralesUpdate(
+        resultado_cenizas_porc=resultado_cenizas_porc
+    )
+
+    updated_general_entry = crud_datos_generales.update_datos_generales_entry(
+        db, keys=keys_tabla_general, data_update=datos_update_general
+    )
+
+    return updated_general_entry is not None
+
+
+# --- Puedes añadir aquí la función para promediar y actualizar nitrógeno que ya teníamos ---
+# def promediar_y_actualizar_nitrogeno_en_tabla_general(...): ...

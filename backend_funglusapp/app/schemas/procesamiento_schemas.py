@@ -1,11 +1,9 @@
 # backend_funglusapp/app/schemas/procesamiento_schemas.py
-from datetime import datetime  # Para fecha_hora_lote
+from datetime import datetime
 from typing import List, Optional
 
-# Importa los schemas InDB de tus catálogos para las referencias en RegistroAnalisisNitrogenoInDB
-from app.schemas.catalogo_schemas import (
-    CicloInDB as CicloCatalogoInDB,  # Renombrar para evitar colisión si usas CicloInDB para otra cosa
-)
+# Importa los schemas InDB de tus catálogos (ya deberían estar aquí)
+from app.schemas.catalogo_schemas import CicloInDB as CicloCatalogoInDB
 from app.schemas.catalogo_schemas import EtapaInDB as EtapaCatalogoInDB
 from app.schemas.catalogo_schemas import MuestraInDB as MuestraCatalogoInDB
 from app.schemas.catalogo_schemas import OrigenInDB as OrigenCatalogoInDB
@@ -114,6 +112,76 @@ class RegistroAnalisisNitrogenoInDB(RegistroAnalisisNitrogenoBase):
     muestra_catalogo_ref: Optional[MuestraCatalogoInDB] = None
     origen_catalogo_ref: Optional[OrigenCatalogoInDB] = None
     # ciclo_procesamiento_ref: Optional[CicloProcesamientoInDB] = None # Si se quiere devolver el lote completo anidado
+
+    class Config:
+        from_attributes = True
+
+
+# --- ¡NUEVOS SCHEMAS PARA REGISTRO ANÁLISIS DE CENIZAS! ---
+
+
+class RegistroAnalisisCenizasBase(BaseModel):
+    # IDs para las relaciones de catálogo
+    ciclo_catalogo_id: int = Field(
+        ..., description="ID del Ciclo general del catálogo."
+    )
+    etapa_catalogo_id: int = Field(..., description="ID de la Etapa del catálogo.")
+    muestra_catalogo_id: int = Field(..., description="ID de la Muestra del catálogo.")
+    origen_catalogo_id: int = Field(..., description="ID del Origen del catálogo.")
+
+    # No hay fecha_analisis_cenizas aquí, se usa la del CicloProcesamiento.
+
+    # Inputs del usuario para el análisis de cenizas
+    peso_crisol_vacio_g: Optional[float] = Field(
+        None, description="Peso Crisol vacío [g] (a)"
+    )
+    peso_crisol_mas_muestra_g: Optional[float] = Field(
+        None, description="Peso crisol + muestra [g] (b)"
+    )
+    peso_crisol_mas_cenizas_g: Optional[float] = Field(
+        None, description="Peso crisol + cenizas [g] (c)"
+    )
+
+
+class RegistroAnalisisCenizasCreate(RegistroAnalisisCenizasBase):
+    ciclo_procesamiento_id: int = Field(
+        ..., description="ID del Ciclo de Procesamiento al que pertenece este registro."
+    )
+    # El campo calc_cenizas_porc no se envía en Create, se calcula en el backend.
+
+
+class RegistroAnalisisCenizasUpdate(BaseModel):
+    # Permitir actualizar solo los inputs. Los IDs de catálogo y de ciclo_procesamiento_id
+    # generalmente no deberían cambiar una vez creado el registro.
+    peso_crisol_vacio_g: Optional[float] = None
+    peso_crisol_mas_muestra_g: Optional[float] = None
+    peso_crisol_mas_cenizas_g: Optional[float] = None
+    # Si se permite cambiar los IDs de catálogo, añadir aquí:
+    # ciclo_catalogo_id: Optional[int] = None
+    # etapa_catalogo_id: Optional[int] = None
+    # muestra_catalogo_id: Optional[int] = None
+    # origen_catalogo_id: Optional[int] = None
+
+
+class RegistroAnalisisCenizasInDB(RegistroAnalisisCenizasBase):
+    id: int
+    ciclo_procesamiento_id: int
+
+    # Campo calculado devuelto por el backend
+    calc_cenizas_porc: Optional[float] = Field(
+        None, description="Calculado: ((c - a) / (b - a)) * 100"
+    )
+
+    created_at: datetime
+    updated_at: datetime
+
+    # Referencias a los nombres de los catálogos para fácil acceso en el frontend
+    ciclo_catalogo_ref: Optional[CicloCatalogoInDB] = None
+    etapa_catalogo_ref: Optional[EtapaCatalogoInDB] = None
+    muestra_catalogo_ref: Optional[MuestraCatalogoInDB] = None
+    origen_catalogo_ref: Optional[OrigenCatalogoInDB] = None
+    # Opcional: si quieres devolver también el detalle del ciclo de procesamiento anidado
+    # ciclo_procesamiento_ref: Optional[CicloProcesamientoInDB] = None
 
     class Config:
         from_attributes = True

@@ -1,9 +1,15 @@
 # backend_funglusapp/app/db/models.py
-from sqlalchemy import Date  # Ya lo tenías
-from sqlalchemy import DateTime  # Para fecha_hora_lote y timestamps
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func  # Para server_default=func.now()
+from sqlalchemy.sql import func
 
 from .database import Base
 
@@ -203,6 +209,12 @@ class CicloProcesamiento(Base):
         back_populates="ciclo_procesamiento_ref",
         cascade="all, delete-orphan",  # Si se borra un CicloProcesamiento, se borran sus registros asociados
     )
+
+    registros_cenizas = relationship(
+        "RegistroAnalisisCenizas",
+        back_populates="ciclo_procesamiento_ref",
+        cascade="all, delete-orphan",
+    )
     # TODO: Futuro: registros_cenizas = relationship("RegistroAnalisisCenizas", back_populates="ciclo_procesamiento_ref", cascade="all, delete-orphan")
 
 
@@ -257,6 +269,79 @@ class RegistroAnalisisNitrogeno(Base):
     )
     calc_nitrogeno_base_seca_porc = Column(
         Float, nullable=True, comment="Calculado: (c*b*1.4)/d"
+    )
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+# Regitro ANalisis Cenizas
+
+
+class RegistroAnalisisCenizas(Base):
+    __tablename__ = "registros_analisis_cenizas"
+    __table_args__ = (
+        UniqueConstraint(
+            "ciclo_procesamiento_id",
+            "ciclo_catalogo_id",
+            "etapa_catalogo_id",
+            "muestra_catalogo_id",
+            "origen_catalogo_id",
+            name="_registro_cenizas_lote_catalogo_uc",
+        ),
+        {
+            "comment": "Registros individuales de análisis de cenizas. Únicos por combinación de catálogos dentro de un lote."
+        },
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Clave foránea al Ciclo de Procesamiento
+    ciclo_procesamiento_id = Column(
+        Integer, ForeignKey("ciclos_procesamiento.id"), nullable=False, index=True
+    )
+    ciclo_procesamiento_ref = relationship(
+        "CicloProcesamiento", back_populates="registros_cenizas"
+    )
+
+    # Claves foráneas a los Catálogos Generales
+    ciclo_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_ciclos.id"), nullable=False, index=True
+    )
+    etapa_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_etapas.id"), nullable=False, index=True
+    )
+    muestra_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_muestras.id"), nullable=False, index=True
+    )
+    origen_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_origenes.id"), nullable=False, index=True
+    )
+
+    # Referencias unidireccionales a los catálogos (para cargar nombres, etc.)
+    ciclo_catalogo_ref = relationship("Ciclo")
+    etapa_catalogo_ref = relationship("Etapa")
+    muestra_catalogo_ref = relationship("Muestra")
+    origen_catalogo_ref = relationship("Origen")
+
+    # Ya no hay 'fecha_analisis_cenizas' aquí, se usa la del CicloProcesamiento.
+
+    # Inputs del Usuario para el Análisis de Cenizas
+    peso_crisol_vacio_g = Column(
+        Float, nullable=True, comment="Peso Crisol vacío [g] (a)"
+    )
+    peso_crisol_mas_muestra_g = Column(
+        Float, nullable=True, comment="Peso crisol + muestra [g] (b)"
+    )
+    peso_crisol_mas_cenizas_g = Column(
+        Float, nullable=True, comment="Peso crisol + cenizas [g] (c)"
+    )
+
+    # Campo Calculado (se guarda en esta tabla, calculado por el backend)
+    calc_cenizas_porc = Column(
+        Float, nullable=True, comment="Calculado: ((c - a) / (b - a)) * 100"
     )
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
