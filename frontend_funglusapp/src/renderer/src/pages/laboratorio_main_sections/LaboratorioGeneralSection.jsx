@@ -1,142 +1,80 @@
 // src/renderer/src/pages/laboratorio_main_sections/LaboratorioGeneralSection.jsx
-import React, { useCallback, useEffect, useState } from 'react'
-import { FiRefreshCw } from 'react-icons/fi'
+import React, { useCallback, useState } from 'react'
+import { FiClipboard, FiDatabase, FiEdit, FiFilter } from 'react-icons/fi'
 import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm'
 import MetadataForm from '../../components/laboratorio/general/MetadataForm'
-import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz'
-import { useCiclo } from '../../contexts/CicloContext'
+import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz' // El ResumenMatriz modificado
 
 function LaboratorioGeneralSection() {
-  const {
-    currentCiclo: globalCicloNombre,
-    selectCiclo: setGlobalCiclo,
-    availableCiclos,
-    isFetchingCiclos,
-    refreshCiclos,
-    getCurrentCicloId
-  } = useCiclo()
+  // Estado para las claves de catálogo seleccionadas (Ciclo Cat, Etapa, Muestra, Origen)
+  const [selectedCatalogoKeys, setSelectedCatalogoKeys] = useState(null)
 
-  const [confirmedFullKeys, setConfirmedFullKeys] = useState(null)
-  const activeCicloIdFromContext = getCurrentCicloId()
-
-  const handleIdentificadoresConfirmed = useCallback((keysFromSelector) => {
-    console.log('LaboratorioGeneralSection: Combinación de claves confirmada:', keysFromSelector)
-    setConfirmedFullKeys(keysFromSelector)
+  // Callback para cuando se confirman los identificadores del IdentificadoresSelectForm
+  const handleCatalogoKeysConfirm = useCallback((keys) => {
+    console.log('LaboratorioGeneralSection: Combinación de claves confirmada:', keys)
+    setSelectedCatalogoKeys(keys)
   }, [])
 
-  const handleIdentificadoresCleared = useCallback(() => {
+  // Callback para cuando se limpian los identificadores
+  const handleCatalogoKeysClear = useCallback(() => {
     console.log('LaboratorioGeneralSection: Selección de identificadores limpiada.')
-    setConfirmedFullKeys(null)
+    setSelectedCatalogoKeys(null)
   }, [])
-
-  useEffect(() => {
-    setConfirmedFullKeys(null)
-  }, [globalCicloNombre])
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-700 border-b pb-2">
-        Laboratorio: Entrada General de Datos
+    <div className="space-y-6 p-1">
+      <h2 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+        <FiClipboard className="mr-3 text-purple-600" size={24} />
+        Gestión de Datos Generales de Laboratorio
       </h2>
 
-      {/* 1. Selector de Ciclo Global */}
-      <div className="p-4 bg-white rounded-lg shadow-md border border-gray-200">
-        <label
-          htmlFor="ciclo-selector-general"
-          className="block text-sm font-medium text-gray-700 mb-1"
-        >
-          1. Ciclo de Trabajo Activo:
-        </label>
-        <div className="flex items-center gap-2">
-          <select
-            id="ciclo-selector-general"
-            value={globalCicloNombre || ''}
-            onChange={(e) => setGlobalCiclo(e.target.value)}
-            disabled={isFetchingCiclos}
-            className="block w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          >
-            <option value="">-- Selecciona un Ciclo --</option>
-            {Array.isArray(availableCiclos) &&
-              availableCiclos.map((ciclo) => (
-                <option key={ciclo.id} value={ciclo.nombre_ciclo}>
-                  {ciclo.nombre_ciclo}
-                </option>
-              ))}
-          </select>
-          <button
-            type="button"
-            onClick={refreshCiclos}
-            disabled={isFetchingCiclos}
-            className="p-2.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 disabled:opacity-50"
-            title="Refrescar lista de ciclos"
-          >
-            <FiRefreshCw className={`h-4 w-4 ${isFetchingCiclos ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-        {!globalCicloNombre && (
-          <p className="text-xs text-orange-600 mt-1">
-            Por favor, selecciona un ciclo o crea uno nuevo en "Gestión de Ciclos".
-          </p>
-        )}
+      {/* Sección 1: Selección de Identificadores de Catálogo */}
+      <div className="p-4 bg-white rounded-lg shadow border border-gray-200">
+        <h3 className="text-md font-semibold text-gray-600 mb-3 border-b pb-2">
+          <FiFilter className="inline mr-2 mb-1" />
+          1. Seleccione el Contexto del Catálogo
+        </h3>
+        <IdentificadoresSelectForm
+          onConfirm={handleCatalogoKeysConfirm}
+          onClear={handleCatalogoKeysClear}
+          // formKey podría usarse si necesitamos resetearlo externamente,
+          // por ahora no parece necesario aquí ya que es el nivel superior de selección.
+        />
       </div>
 
-      {/* 2. Selectores para Etapa, Muestra, Origen */}
-      {globalCicloNombre && activeCicloIdFromContext && (
-        <IdentificadoresSelectForm
-          activeCicloId={activeCicloIdFromContext}
-          onConfirm={handleIdentificadoresConfirmed}
-          onClear={handleIdentificadoresCleared}
-        />
-      )}
-
-      {/* 3. Formulario de Metadata */}
-      {confirmedFullKeys && confirmedFullKeys.cicloId && confirmedFullKeys.etapaId && (
-        <div className="p-4 bg-white rounded-lg shadow-md border border-gray-200 mt-4">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            Ingresar Metadatos para: <br />
-            <span className="text-sm">
-              Ciclo: <strong className="text-indigo-600">{confirmedFullKeys.cicloNombre}</strong>{' '}
-              (ID: {confirmedFullKeys.cicloId}), Etapa:{' '}
-              <strong className="text-indigo-600">{confirmedFullKeys.etapaNombre}</strong> (ID:{' '}
-              {confirmedFullKeys.etapaId}), Muestra:{' '}
-              <strong className="text-indigo-600">
-                {confirmedFullKeys.muestraNombre || 'N/A'}
-              </strong>{' '}
-              (ID: {confirmedFullKeys.muestraId || 'N/A'}), Origen:{' '}
-              <strong className="text-indigo-600">{confirmedFullKeys.origenNombre || 'N/A'}</strong>{' '}
-              (ID: {confirmedFullKeys.origenId || 'N/A'})
-            </span>
+      {/* Sección 2: Formulario de Metadatos (visible si se seleccionó un contexto de catálogo) */}
+      {selectedCatalogoKeys && (
+        <div className="p-4 bg-white rounded-lg shadow border border-gray-200 mt-4">
+          <h3 className="text-md font-semibold text-gray-600 mb-3 border-b pb-2">
+            <FiEdit className="inline mr-2 mb-1" />
+            2. Editar Metadatos para la Selección Actual
           </h3>
           <MetadataForm
-            keysFromSection={{
-              cicloId: confirmedFullKeys.cicloId,
-              etapaId: confirmedFullKeys.etapaId,
-              muestraId: confirmedFullKeys.muestraId,
-              origenId: confirmedFullKeys.origenId,
-              cicloNombre: confirmedFullKeys.cicloNombre,
-              etapaNombre: confirmedFullKeys.etapaNombre,
-              muestraNombre: confirmedFullKeys.muestraNombre,
-              origenNombre: confirmedFullKeys.origenNombre
-            }}
+            keysFromSection={selectedCatalogoKeys}
+            key={
+              selectedCatalogoKeys
+                ? `${selectedCatalogoKeys.cicloId}-${selectedCatalogoKeys.etapaId}-${selectedCatalogoKeys.muestraId}-${selectedCatalogoKeys.origenId}`
+                : 'empty'
+            } // Forza re-render si las claves cambian
           />
         </div>
       )}
-      {!confirmedFullKeys && globalCicloNombre && (
-        <p className="mt-2 text-sm text-blue-600 italic p-4 bg-blue-50 rounded-md shadow">
-          Selecciona Etapa, Muestra (si aplica) y Origen (si aplica) y presiona "Aplicar Contexto"
-          para ingresar metadatos.
-        </p>
-      )}
-
-      {/* 4. Resumen del Ciclo (Matriz) */}
-      {globalCicloNombre && activeCicloIdFromContext && (
-        <div className="p-4 bg-white rounded-lg shadow-md border border-gray-200 mt-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            Resumen del Ciclo: <span className="text-indigo-600">{globalCicloNombre}</span>
-          </h3>
-          <ResumenMatriz cicloId={activeCicloIdFromContext} />
+      {!selectedCatalogoKeys && (
+        <div className="p-3 mt-4 rounded-md border text-sm bg-gray-50 border-gray-200 text-gray-600">
+          Seleccione una combinación de Ciclo (Catálogo), Etapa, Muestra y Origen para ver/editar
+          sus metadatos generales.
         </div>
       )}
+
+      {/* Sección 3: Resumen de la Matriz General */}
+      {/* ResumenMatriz ahora tiene su propio selector de ciclo, por lo que no necesita props de cicloId/Nombre */}
+      <div className="mt-8 p-4 bg-white rounded-lg shadow border border-gray-200">
+        <h3 className="text-md font-semibold text-gray-700 mb-3 border-b pb-2">
+          <FiDatabase className="inline mr-2 mb-1" />
+          3. Resumen de la Tabla General (Seleccione un Ciclo del Catálogo en la tabla de abajo)
+        </h3>
+        <ResumenMatriz />
+      </div>
     </div>
   )
 }

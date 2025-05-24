@@ -8,7 +8,7 @@ from typing import List, Optional, Type, TypeVar
 from app.db import models
 from app.db.database import Base  # Usado por ModelType
 from app.schemas import catalogo_schemas as schemas
-from sqlalchemy import func
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 # Define un tipo genérico para los modelos de SQLAlchemy que heredan de Base.
@@ -53,19 +53,13 @@ def get_ciclo_by_nombre(db: Session, nombre_ciclo: str) -> Optional[models.Ciclo
 
 def get_all_ciclos(db: Session, skip: int = 0, limit: int = 100) -> List[models.Ciclo]:
     """
-    Obtiene una lista de todos los ciclos, con paginación.
-
-    Args:
-        db: La sesión de base de datos.
-        skip: Número de registros a saltar (para paginación).
-        limit: Número máximo de registros a devolver.
-
-    Returns:
-        Una lista de objetos Ciclo.
+    Obtiene una lista de todos los ciclos, con paginación,
+    ordenados por fecha de creación descendente (los más recientes primero).
     """
     return (
         db.query(models.Ciclo)
-        .order_by(models.Ciclo.nombre_ciclo)
+        # Ordenar por 'created_at' descendente. Puedes usar 'updated_at' si prefieres.
+        .order_by(desc(models.Ciclo.created_at))
         .offset(skip)
         .limit(limit)
         .all()

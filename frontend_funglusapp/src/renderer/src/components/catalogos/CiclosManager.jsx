@@ -1,19 +1,29 @@
 // src/renderer/src/components/catalogos/CiclosManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
-import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
+import {
+  FiEdit,
+  FiLoader,
+  FiPlusCircle,
+  FiRefreshCw,
+  FiSave,
+  FiTrash2,
+  FiXCircle
+} from 'react-icons/fi'
 
-const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1' // URL base de tu API
+const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'
+const CICLOS_ENDPOINT = `${FASTAPI_BASE_URL}/catalogos/ciclos`
 
 const initialCicloFormState = {
   id: null,
   nombre_ciclo: '',
   descripcion: '',
-  fecha_inicio: ''
+  fecha_inicio: '' // Formato YYYY-MM-DD
 }
 
 function CiclosManager() {
   const [ciclos, setCiclos] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -21,22 +31,25 @@ function CiclosManager() {
   const [formData, setFormData] = useState(initialCicloFormState)
   const [isEditing, setIsEditing] = useState(false)
 
+  const displayMessage = (setter, message, duration = 3000) => {
+    setter(message)
+    setTimeout(() => setter(''), duration)
+  }
+
   const fetchCiclos = useCallback(async () => {
     setIsLoading(true)
     setError('')
     try {
-      console.log('CiclosManager: Solicitando todos los ciclos vía HTTP...')
-      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/?limit=1000`) // GET all
+      const response = await fetch(`${CICLOS_ENDPOINT}/?limit=1000`) // Backend ya ordena por created_at desc
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
       const data = await response.json()
-      console.log('CiclosManager: Ciclos recibidos:', data)
       setCiclos(data || [])
     } catch (err) {
-      setError(`Error al cargar ciclos: ${err.message}`)
-      console.error('Error fetching ciclos:', err)
+      console.error('Error fetching ciclos generales:', err)
+      setError(`Error al cargar ciclos generales: ${err.message}`)
     } finally {
       setIsLoading(false)
     }
@@ -56,7 +69,7 @@ function CiclosManager() {
     setIsEditing(false)
     setIsFormVisible(false)
     setError('')
-    setSuccessMessage('')
+    // El successMessage se limpia a través de displayMessage
   }
 
   const handleAddNew = () => {
@@ -69,44 +82,36 @@ function CiclosManager() {
       id: ciclo.id,
       nombre_ciclo: ciclo.nombre_ciclo || '',
       descripcion: ciclo.descripcion || '',
-      fecha_inicio: ciclo.fecha_inicio || ''
+      fecha_inicio: ciclo.fecha_inicio || '' // Asume formato YYYY-MM-DD
     })
     setIsEditing(true)
     setIsFormVisible(true)
     setError('')
-    setSuccessMessage('')
   }
 
   const handleDelete = async (cicloId, cicloNombre) => {
     if (
-      window.confirm(
+      !window.confirm(
         `¿Estás seguro de que quieres borrar el ciclo "${cicloNombre}" (ID: ${cicloId})?`
       )
     ) {
-      setIsLoading(true)
-      setError('')
-      setSuccessMessage('')
-      try {
-        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/${cicloId}`, {
-          method: 'DELETE'
-        })
-        if (!response.ok) {
-          const errData = await response.json().catch(() => ({ detail: response.statusText }))
-          throw new Error(errData.detail || `Error HTTP ${response.status}`)
-        }
-        // const result = await response.json(); // DELETE suele devolver 200 OK con mensaje o 204 No Content
-        setSuccessMessage(`Ciclo "${cicloNombre}" borrado exitosamente.`)
-        fetchCiclos()
-      } catch (err) {
-        setError(`Error al borrar ciclo: ${err.message}`)
-        console.error('Error deleting ciclo:', err)
-      } finally {
-        setIsLoading(false)
-        setTimeout(() => {
-          setError('')
-          setSuccessMessage('')
-        }, 3000)
+      return
+    }
+    setIsSubmitting(true)
+    setError('')
+    try {
+      const response = await fetch(`${CICLOS_ENDPOINT}/${cicloId}`, { method: 'DELETE' })
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ detail: response.statusText }))
+        throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
+      displayMessage(setSuccessMessage, `Ciclo "${cicloNombre}" borrado exitosamente.`)
+      fetchCiclos()
+    } catch (err) {
+      console.error('Error deleting ciclo:', err)
+      displayMessage(setError, `Error al borrar ciclo: ${err.message}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -116,9 +121,8 @@ function CiclosManager() {
       setError('El nombre del ciclo es obligatorio.')
       return
     }
-    setIsLoading(true)
+    setIsSubmitting(true)
     setError('')
-    setSuccessMessage('')
 
     const payload = {
       nombre_ciclo: formData.nombre_ciclo.trim(),
@@ -128,16 +132,17 @@ function CiclosManager() {
 
     try {
       let response
+      let url = CICLOS_ENDPOINT
       if (isEditing && formData.id) {
-        console.log('CiclosManager: Actualizando ciclo vía HTTP:', formData.id, payload)
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/${formData.id}`, {
+        url += `/${formData.id}`
+        response = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
       } else {
-        console.log('CiclosManager: Creando nuevo ciclo vía HTTP:', payload)
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/ciclos/`, {
+        url += `/`
+        response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -146,187 +151,254 @@ function CiclosManager() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
-        // Si el error es por nombre duplicado (400 Bad Request), el backend ya lo maneja
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
-
-      // const result = await response.json(); // El backend devuelve el objeto creado/actualizado
-      setSuccessMessage(
-        isEditing ? 'Ciclo actualizado exitosamente.' : 'Ciclo creado exitosamente.'
+      displayMessage(
+        setSuccessMessage,
+        `Ciclo ${isEditing ? 'actualizado' : 'creado'} exitosamente.`
       )
       resetForm()
       fetchCiclos()
     } catch (err) {
-      setError(`Error al guardar ciclo: ${err.message}`)
       console.error('Error saving ciclo:', err)
+      let errorMessage = `Error al guardar ciclo: ${err.message}`
+      // Intenta obtener más detalles si el backend los envía en un JSON
+      try {
+        const errorResponse = await err.response?.json()
+        if (errorResponse && errorResponse.detail) {
+          errorMessage += ` Detalle: ${errorResponse.detail}`
+        }
+      } catch (jsonError) {
+        // No hacer nada si la respuesta del error no es JSON
+      }
+      displayMessage(setError, errorMessage)
     } finally {
-      setIsLoading(false)
-      setTimeout(() => {
-        setError('')
-        setSuccessMessage('')
-      }, 3000)
+      setIsSubmitting(false)
     }
   }
 
+  const formatDateForDisplay = (isoOrDateString) => {
+    if (!isoOrDateString) return '-'
+    // Intenta parsear como fecha completa, luego como YYYY-MM-DD
+    const date = new Date(isoOrDateString)
+    if (isNaN(date.getTime())) {
+      // Si no es una fecha ISO válida, podría ser YYYY-MM-DD
+      const parts = isoOrDateString.split('-')
+      if (parts.length === 3) {
+        // Asume YYYY-MM-DD y lo convierte a un formato localizado
+        return new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      }
+      return isoOrDateString // Fallback al string original si no se puede parsear
+    }
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  }
+
   return (
-    // El JSX del return (formulario y tabla) no necesita cambios significativos,
-    // ya que la lógica de estado y los handlers son los mismos.
-    // Solo asegúrate de que todos los campos y botones funcionen como antes.
-    <div className="space-y-4">
-      <button
-        onClick={handleAddNew}
-        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
-        disabled={isLoading || isFormVisible}
-      >
-        <FiPlusCircle className="mr-2" /> Añadir Nuevo Ciclo
-      </button>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <button
+          onClick={handleAddNew}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center text-sm shadow-sm disabled:opacity-60"
+          disabled={isFormVisible || isLoading || isSubmitting}
+        >
+          <FiPlusCircle className="mr-2" /> Añadir Nuevo Ciclo General
+        </button>
+      </div>
 
       {isFormVisible && (
-        <form
-          onSubmit={handleSubmit}
-          className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
-        >
-          <h3 className="text-lg font-medium mb-2 text-gray-800">
-            {isEditing ? 'Editar Ciclo' : 'Crear Nuevo Ciclo'}
-          </h3>
-          <div>
-            <label htmlFor="nombre_ciclo" className="block text-sm font-medium text-gray-700">
-              Nombre del Ciclo (ID Usuario):
-            </label>
-            <input
-              type="text"
-              name="nombre_ciclo"
-              id="nombre_ciclo"
-              value={formData.nombre_ciclo}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">
-              Descripción (Opcional):
-            </label>
-            <input
-              type="text"
-              name="descripcion"
-              id="descripcion"
-              value={formData.descripcion}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="fecha_inicio" className="block text-sm font-medium text-gray-700">
-              Fecha de Inicio (Opcional):
-            </label>
-            <input
-              type="date"
-              name="fecha_inicio"
-              id="fecha_inicio"
-              value={formData.fecha_inicio}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-          </div>
-          <div className="flex gap-2 pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
-            >
-              <FiSave className="mr-2" />{' '}
-              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Ciclo' : 'Crear Ciclo'}
-            </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              disabled={isLoading}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 flex items-center text-sm"
-            >
-              <FiXCircle className="mr-2" /> Cancelar
-            </button>
-          </div>
-        </form>
+        <div className="p-6 bg-white rounded-lg shadow-xl border border-gray-200 transition-all duration-300 ease-in-out">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <h3 className="text-xl font-medium text-gray-800 border-b pb-2 mb-4">
+              {isEditing ? 'Editar Ciclo General' : 'Crear Nuevo Ciclo General'}
+            </h3>
+            <div>
+              <label
+                htmlFor="nombre_ciclo_general_form"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Nombre del Ciclo (ID Usuario):
+              </label>
+              <input
+                type="text"
+                name="nombre_ciclo"
+                id="nombre_ciclo_general_form"
+                value={formData.nombre_ciclo}
+                onChange={handleInputChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="descripcion_ciclo_general_form"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Descripción (Opcional):
+              </label>
+              <textarea
+                name="descripcion"
+                id="descripcion_ciclo_general_form"
+                value={formData.descripcion}
+                onChange={handleInputChange}
+                rows="3"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="fecha_inicio_general_form"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Fecha de Inicio (Opcional):
+              </label>
+              <input
+                type="date"
+                name="fecha_inicio"
+                id="fecha_inicio_general_form"
+                value={formData.fecha_inicio}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-x-3 pt-3">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-5 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm shadow-sm disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <FiLoader className="animate-spin mr-2" />
+                ) : (
+                  <FiSave className="mr-2" />
+                )}
+                {isEditing ? 'Actualizar Ciclo' : 'Guardar Ciclo'}
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                disabled={isSubmitting}
+                className="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 flex items-center text-sm shadow-sm"
+              >
+                <FiXCircle className="mr-2" /> Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {error && (
-        <p className="mt-2 text-sm text-red-600 bg-red-100 p-3 rounded-md border border-red-300">
+        <p className="mt-3 text-sm text-red-600 bg-red-100 p-3 rounded-md border border-red-300 shadow-sm">
           {error}
         </p>
       )}
       {successMessage && (
-        <p className="mt-2 text-sm text-green-600 bg-green-100 p-3 rounded-md border border-green-300">
+        <p className="mt-3 text-sm text-green-600 bg-green-100 p-3 rounded-md border border-green-300 shadow-sm">
           {successMessage}
         </p>
       )}
 
-      <div className="mt-6 overflow-x-auto">
-        <h3 className="text-lg font-medium mb-2 text-gray-700">Ciclos Existentes</h3>
-        {isLoading && <p className="text-sm text-gray-500 italic">Cargando ciclos...</p>}
-        {!isLoading && ciclos.length === 0 && (
-          <p className="text-sm text-gray-500">No hay ciclos creados todavía.</p>
+      <div className="mt-6 bg-white p-2 rounded-lg shadow-lg border border-gray-200">
+        <div className="flex justify-between items-center mb-3 px-4 pt-3">
+          <h3 className="text-xl font-medium text-gray-800">Ciclos Generales Existentes</h3>
+          <button
+            onClick={fetchCiclos}
+            disabled={isLoading || isSubmitting}
+            className="p-2 text-gray-500 hover:text-indigo-600 rounded-full hover:bg-gray-100"
+            title="Refrescar lista"
+          >
+            <FiRefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+        {isLoading && (
+          <p className="p-4 text-sm text-gray-500 italic text-center">
+            Cargando ciclos generales...
+          </p>
         )}
-        {!isLoading && ciclos.length > 0 && (
-          <table className="min-w-full divide-y divide-gray-200 border shadow-sm rounded-lg">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Nombre Ciclo
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Descripción
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Fecha Inicio
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {ciclos.map((ciclo) => (
-                <tr key={ciclo.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{ciclo.id}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {ciclo.nombre_ciclo}
-                  </td>
-                  <td
-                    className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate"
-                    title={ciclo.descripcion}
-                  >
-                    {ciclo.descripcion || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                    {ciclo.fecha_inicio || '-'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm space-x-2">
-                    <button
-                      onClick={() => handleEdit(ciclo)}
-                      className="text-indigo-600 hover:text-indigo-900 p-1"
-                      title="Editar"
-                    >
-                      <FiEdit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(ciclo.id, ciclo.nombre_ciclo)}
-                      className="text-red-600 hover:text-red-900 p-1"
-                      title="Borrar"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  </td>
+        {!isLoading && !error && ciclos.length === 0 && (
+          <p className="p-4 text-sm text-gray-500 text-center">
+            No hay ciclos generales creados todavía.
+          </p>
+        )}
+        {!isLoading && !error && ciclos.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Nombre Ciclo
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Descripción
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Fecha Inicio
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Creado
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Actualizado
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider">
+                    Acciones
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {ciclos.map((ciclo) => (
+                  <tr key={ciclo.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                      {ciclo.nombre_ciclo}
+                    </td>
+                    <td
+                      className="px-4 py-3 text-gray-500 max-w-xs truncate"
+                      title={ciclo.descripcion}
+                    >
+                      {ciclo.descripcion || '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                      {ciclo.fecha_inicio || '-'}
+                    </td>
+                    {/* Asumiendo que el backend ahora devuelve created_at y updated_at para CicloInDB */}
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                      {formatDateForDisplay(ciclo.created_at)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                      {formatDateForDisplay(ciclo.updated_at)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap space-x-2">
+                      <button
+                        onClick={() => handleEdit(ciclo)}
+                        className="text-indigo-600 hover:text-indigo-800 p-1.5 rounded-md hover:bg-indigo-100"
+                        title="Editar"
+                      >
+                        <FiEdit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(ciclo.id, ciclo.nombre_ciclo)}
+                        className="text-red-600 hover:text-red-800 p-1.5 rounded-md hover:bg-red-100"
+                        title="Borrar"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
   )
 }
+
 export default CiclosManager

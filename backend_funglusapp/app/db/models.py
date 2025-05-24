@@ -21,19 +21,24 @@ class Ciclo(Base):
     id = Column(Integer, primary_key=True, index=True)
     nombre_ciclo = Column(String, unique=True, index=True, nullable=False)
     descripcion = Column(String, nullable=True)
-    fecha_inicio = Column(
-        String, nullable=True
-    )  # Considera cambiar a Date o DateTime si es apropiado
+    fecha_inicio = Column(String, nullable=True)  # Considera cambiar a Date o DateTime
 
-    # Relaciones
+    # --- AÑADIR ESTOS CAMPOS DE TIMESTAMP ---
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+    # --- FIN DE CAMPOS AÑADIDOS ---
+
+    # Relaciones existentes (asegúrate que estén actualizadas como en la respuesta #100)
     datos_generales_lab = relationship(
         "DatosGeneralesLaboratorio", back_populates="ciclo_ref"
     )
     registros_nitrogeno = relationship(
         "RegistroAnalisisNitrogeno", back_populates="ciclo_catalogo_ref"
     )
-    # TODO: Cuando se implemente RegistroAnalisisCenizas, actualizar o añadir la relación aquí.
-    # datos_cenizas = relationship("DatosCenizas", back_populates="ciclo_ref") # Comentado si DatosCenizas ya no existe o será reemplazado
+    # TODO: Si tienes RegistroAnalisisCenizas y quieres la relación inversa, añádela aquí.
+    # registros_cenizas = relationship("RegistroAnalisisCenizas", back_populates="ciclo_catalogo_ref")
 
 
 class Etapa(Base):
