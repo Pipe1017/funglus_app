@@ -317,9 +317,9 @@ def delete_catalogo_simple(
 # --- Funciones CRUD Específicas para Etapa ---
 
 
-def get_etapa_by_id(db: Session, etapa_id: int) -> Optional[models.Etapa]:
+def get_etapa_by_id(db: Session, item_id: int) -> Optional[models.Etapa]:
     """Obtiene una etapa por su ID."""
-    return get_catalogo_simple_by_id(db, models.Etapa, etapa_id)
+    return get_catalogo_simple_by_id(db, models.Etapa, item_id)
 
 
 def get_etapa_by_nombre(db: Session, nombre: str) -> Optional[models.Etapa]:
@@ -347,17 +347,17 @@ def update_etapa(
     return update_catalogo_simple(db, models.Etapa, item_id, item_update)
 
 
-def delete_etapa(db: Session, etapa_id: int) -> bool:
+def delete_etapa(db: Session, item_id: int) -> bool:
     """Borra una etapa por su ID."""
-    return delete_catalogo_simple(db, models.Etapa, etapa_id)
+    return delete_catalogo_simple(db, models.Etapa, item_id)
 
 
 # --- Funciones CRUD Específicas para Muestra ---
 
 
-def get_muestra_by_id(db: Session, muestra_id: int) -> Optional[models.Muestra]:
+def get_muestra_by_id(db: Session, item_id: int) -> Optional[models.Muestra]:
     """Obtiene una muestra por su ID."""
-    return get_catalogo_simple_by_id(db, models.Muestra, muestra_id)
+    return get_catalogo_simple_by_id(db, models.Muestra, item_id)
 
 
 def get_muestra_by_nombre(db: Session, nombre: str) -> Optional[models.Muestra]:
@@ -387,17 +387,17 @@ def update_muestra(
     return update_catalogo_simple(db, models.Muestra, item_id, item_update)
 
 
-def delete_muestra(db: Session, muestra_id: int) -> bool:
+def delete_muestra(db: Session, item_id: int) -> bool:
     """Borra una muestra por su ID."""
-    return delete_catalogo_simple(db, models.Muestra, muestra_id)
+    return delete_catalogo_simple(db, models.Muestra, item_id)
 
 
 # --- Funciones CRUD Específicas para Origen ---
 
 
-def get_origen_by_id(db: Session, origen_id: int) -> Optional[models.Origen]:
+def get_origen_by_id(db: Session, item_id: int) -> Optional[models.Origen]:
     """Obtiene un origen por su ID."""
-    return get_catalogo_simple_by_id(db, models.Origen, origen_id)
+    return get_catalogo_simple_by_id(db, models.Origen, item_id)
 
 
 def get_origen_by_nombre(db: Session, nombre: str) -> Optional[models.Origen]:
@@ -427,6 +427,6 @@ def update_origen(
     return update_catalogo_simple(db, models.Origen, item_id, item_update)
 
 
-def delete_origen(db: Session, origen_id: int) -> bool:
+def delete_origen(db: Session, item_id: int) -> bool:
     """Borra un origen por su ID."""
-    return delete_catalogo_simple(db, models.Origen, origen_id)
+    return delete_catalogo_simple(db, models.Origen, item_id)
