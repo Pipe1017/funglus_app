@@ -1,25 +1,44 @@
-// src/renderer/src/pages/laboratorio_main_sections/LaboratorioGeneralSection.jsx
-import React, { useCallback, useState } from 'react'
-import { FiClipboard, FiDatabase, FiEdit, FiFilter } from 'react-icons/fi'
-import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm'
-import MetadataForm from '../../components/laboratorio/general/MetadataForm'
-import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz' // El ResumenMatriz modificado
+import React, { useState, useCallback } from 'react';
+import { FiEdit, FiFilter, FiDatabase, FiClipboard } from 'react-icons/fi';
+import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm';
+import MetadataForm from '../../components/laboratorio/general/MetadataForm';
+import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz';
 
 function LaboratorioGeneralSection() {
-  // Estado para las claves de catálogo seleccionadas (Ciclo Cat, Etapa, Muestra, Origen)
-  const [selectedCatalogoKeys, setSelectedCatalogoKeys] = useState(null)
+  // Este estado ahora es la "fuente de la verdad" para la selección activa
+  const [selectedCatalogoKeys, setSelectedCatalogoKeys] = useState(null);
 
-  // Callback para cuando se confirman los identificadores del IdentificadoresSelectForm
   const handleCatalogoKeysConfirm = useCallback((keys) => {
-    console.log('LaboratorioGeneralSection: Combinación de claves confirmada:', keys)
-    setSelectedCatalogoKeys(keys)
-  }, [])
+    console.log('LaboratorioGeneralSection: Combinación de claves confirmada desde formulario:', keys);
+    setSelectedCatalogoKeys(keys);
+  }, []);
 
-  // Callback para cuando se limpian los identificadores
   const handleCatalogoKeysClear = useCallback(() => {
-    console.log('LaboratorioGeneralSection: Selección de identificadores limpiada.')
-    setSelectedCatalogoKeys(null)
-  }, [])
+    console.log('LaboratorioGeneralSection: Selección de identificadores limpiada.');
+    setSelectedCatalogoKeys(null);
+  }, []);
+  
+  // --- NUEVA FUNCIÓN PARA MANEJAR EL CLIC DE "EDITAR" DESDE LA MATRIZ ---
+  const handleEditFromMatriz = useCallback((rowToEdit) => {
+    console.log('LaboratorioGeneralSection: Editar fila desde matriz:', rowToEdit);
+    // Extraer las claves y nombres del objeto 'row' de la matriz
+    const keys = {
+      cicloId: rowToEdit.ciclo_id,
+      etapaId: rowToEdit.etapa_id,
+      muestraId: rowToEdit.muestra_id,
+      origenId: rowToEdit.origen_id,
+      cicloNombre: rowToEdit.ciclo_ref?.nombre_ciclo,
+      etapaNombre: rowToEdit.etapa_ref?.nombre,
+      muestraNombre: rowToEdit.muestra_ref?.nombre,
+      origenNombre: rowToEdit.origen_ref?.nombre,
+    };
+    // Actualizar el estado central. Esto hará que tanto IdentificadoresSelectForm
+    // como MetadataForm se actualicen con estos datos.
+    setSelectedCatalogoKeys(keys);
+    // Opcional: Hacer scroll hacia arriba para ver el formulario de edición
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
 
   return (
     <div className="space-y-6 p-1">
@@ -32,17 +51,16 @@ function LaboratorioGeneralSection() {
       <div className="p-4 bg-white rounded-lg shadow border border-gray-200">
         <h3 className="text-md font-semibold text-gray-600 mb-3 border-b pb-2">
           <FiFilter className="inline mr-2 mb-1" />
-          1. Seleccione el Contexto del Catálogo
+          1. Seleccione o Verifique el Contexto del Catálogo
         </h3>
         <IdentificadoresSelectForm
           onConfirm={handleCatalogoKeysConfirm}
           onClear={handleCatalogoKeysClear}
-          // formKey podría usarse si necesitamos resetearlo externamente,
-          // por ahora no parece necesario aquí ya que es el nivel superior de selección.
+          value={selectedCatalogoKeys} // Pasamos el estado para controlar los selectores
         />
       </div>
 
-      {/* Sección 2: Formulario de Metadatos (visible si se seleccionó un contexto de catálogo) */}
+      {/* Sección 2: Formulario de Metadatos */}
       {selectedCatalogoKeys && (
         <div className="p-4 bg-white rounded-lg shadow border border-gray-200 mt-4">
           <h3 className="text-md font-semibold text-gray-600 mb-3 border-b pb-2">
@@ -51,32 +69,21 @@ function LaboratorioGeneralSection() {
           </h3>
           <MetadataForm
             keysFromSection={selectedCatalogoKeys}
-            key={
-              selectedCatalogoKeys
-                ? `${selectedCatalogoKeys.cicloId}-${selectedCatalogoKeys.etapaId}-${selectedCatalogoKeys.muestraId}-${selectedCatalogoKeys.origenId}`
-                : 'empty'
-            } // Forza re-render si las claves cambian
+            key={Object.values(selectedCatalogoKeys || {}).join('-')} // Forza re-render si las claves cambian
           />
-        </div>
-      )}
-      {!selectedCatalogoKeys && (
-        <div className="p-3 mt-4 rounded-md border text-sm bg-gray-50 border-gray-200 text-gray-600">
-          Seleccione una combinación de Ciclo (Catálogo), Etapa, Muestra y Origen para ver/editar
-          sus metadatos generales.
         </div>
       )}
 
       {/* Sección 3: Resumen de la Matriz General */}
-      {/* ResumenMatriz ahora tiene su propio selector de ciclo, por lo que no necesita props de cicloId/Nombre */}
       <div className="mt-8 p-4 bg-white rounded-lg shadow border border-gray-200">
         <h3 className="text-md font-semibold text-gray-700 mb-3 border-b pb-2">
           <FiDatabase className="inline mr-2 mb-1" />
-          3. Resumen de la Tabla General (Seleccione un Ciclo del Catálogo en la tabla de abajo)
+          3. Resumen de la Tabla General
         </h3>
-        <ResumenMatriz />
+        <ResumenMatriz onEditClick={handleEditFromMatriz} /> {/* Pasamos la nueva función como prop */}
       </div>
     </div>
-  )
+  );
 }
 
-export default LaboratorioGeneralSection
+export default LaboratorioGeneralSection;

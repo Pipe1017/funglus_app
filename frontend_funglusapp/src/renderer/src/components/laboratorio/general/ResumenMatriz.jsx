@@ -1,6 +1,7 @@
 // src/renderer/src/components/laboratorio/general/ResumenMatriz.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiAlertTriangle, FiLayers, FiRefreshCw, FiTrash2 } from 'react-icons/fi';
+import { FiAlertTriangle, FiLayers, FiRefreshCw, FiTrash2, FiEdit
+ } from 'react-icons/fi';
 import { allPossibleMetadataFields } from '../../../config/metadataFormFields';
 
 const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1';
@@ -13,7 +14,7 @@ const pinnedColumnsConfig = {
   right: ['actions']
 };
 
-function ResumenMatriz() {
+function ResumenMatriz({ onEditClick }) {
   const [availableCiclosCatalogo, setAvailableCiclosCatalogo] = useState([]);
   const [selectedCicloCatalogoId, setSelectedCicloCatalogoId] = useState('');
   const [isLoadingCiclos, setIsLoadingCiclos] = useState(false);
@@ -163,28 +164,45 @@ function ResumenMatriz() {
             </button>
           </div>
 
-          {/* ... Mensajes de estado ... */}
           {deleteStatus.error && <p className="my-2 text-xs p-2.5 rounded-md border bg-red-50 text-red-700"><FiAlertTriangle className="inline mr-1" /> {deleteStatus.error}</p>}
           {deleteStatus.success && <p className="my-2 text-xs p-2.5 rounded-md border bg-green-50 text-green-700">{deleteStatus.success}</p>}
           {errorMatriz && !isLoadingMatriz && <p className="my-2 text-xs p-2.5 rounded-md border bg-red-50 text-red-700"><FiAlertTriangle className="inline mr-1" /> {errorMatriz}</p>}
+          
           {isLoadingMatriz && <p className="text-sm text-gray-500 p-4 text-center italic">Cargando datos...</p>}
+          
           {!isLoadingMatriz && !errorMatriz && datosMatriz.length === 0 && <p className="text-sm text-gray-500 p-4 text-center bg-gray-50 rounded-md">No hay datos para el ciclo seleccionado.</p>}
 
-          {datosMatriz.length > 0 && (
+          {datosMatriz.length > 0 && Array.isArray(allTableColumns) && (
             <div className="overflow-x-auto shadow-md rounded-lg border max-h-[600px]">
-              <table className="min-w-full text-xs border-collapse">
+              <table 
+                className="min-w-full text-xs border-collapse"
+                style={{
+                  // Define los anchos como variables CSS. Puedes ajustarlos aquí.
+                  '--width-col-1': '10rem', // 160px
+                  '--width-col-2': '10rem', // 160px
+                  '--width-col-3': '10rem', // 160px
+                }}
+              >
                 <thead className="bg-gray-100 sticky top-0 z-20">
                   <tr>
-                    {allTableColumns.map((col) => {
+                    {allTableColumns.map((col, index) => {
                       const isPinnedLeft = pinnedColumnsConfig.left.includes(col.key);
                       const isPinnedRight = pinnedColumnsConfig.right.includes(col.key);
                       const style = { width: col.width, minWidth: col.width };
-                      if (isPinnedLeft) style.left = col.left + 'px';
-                      if (isPinnedRight) style.right = col.right + 'px';
+                      
+                      let stickyClass = '';
+                      if (isPinnedLeft) {
+                          style.left = col.left + 'px';
+                          stickyClass = 'sticky z-10 bg-gray-50'; // El fondo es crucial
+                      }
+                      if (isPinnedRight) {
+                          style.right = col.right + 'px';
+                          stickyClass = 'sticky z-10 bg-gray-50';
+                      }
                       
                       return (
                         <th key={col.key} scope="col" style={style}
-                          className={`px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap bg-gray-50 ${(isPinnedLeft || isPinnedRight) ? 'sticky z-10' : ''}`}
+                          className={`px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${stickyClass}`}
                         >
                           {col.label}
                         </th>
@@ -195,21 +213,34 @@ function ResumenMatriz() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {datosMatriz.map((row) => (
                     <tr key={row.id} className="hover:bg-gray-50 group">
-                      {allTableColumns.map((col) => {
+                      {allTableColumns.map((col, index) => {
                         const isPinnedLeft = pinnedColumnsConfig.left.includes(col.key);
                         const isPinnedRight = pinnedColumnsConfig.right.includes(col.key);
                         const style = { width: col.width, minWidth: col.width };
-                        if (isPinnedLeft) style.left = col.left + 'px';
-                        if (isPinnedRight) style.right = col.right + 'px';
-
+                        
+                        let stickyClass = '';
+                        if (isPinnedLeft) {
+                            style.left = col.left + 'px';
+                            stickyClass = 'sticky bg-white group-hover:bg-gray-50'; // El fondo es crucial
+                        }
+                        if (isPinnedRight) {
+                            style.right = col.right + 'px';
+                            stickyClass = 'sticky bg-white group-hover:bg-gray-50';
+                        }
+                        
                         return (
                           <td key={`${row.id}-${col.key}`} style={style}
-                            className={`px-3 py-2 whitespace-nowrap text-gray-700 ${(isPinnedLeft || isPinnedRight) ? 'sticky bg-white group-hover:bg-gray-50' : ''}`}
+                            className={`px-3 py-2 whitespace-nowrap text-gray-700 ${stickyClass}`}
                           >
                             {col.key === 'actions' ? (
-                              <button onClick={() => handleDeleteEntry(row)} disabled={deleteStatus.isLoading} className="text-red-500 hover:text-red-700 disabled:opacity-50 p-1" title="Borrar">
-                                <FiTrash2 size={14} />
-                              </button>
+                                <div className="flex items-center space-x-2">
+                                    <button onClick={() => onEditClick(row)} className="text-blue-500 hover:text-blue-700 p-1" title="Editar esta entrada" >
+                                        <FiEdit size={14} />
+                                    </button>
+                                    <button onClick={() => handleDeleteEntry(row)} disabled={deleteStatus.isLoading} className="text-red-500 hover:text-red-700 disabled:opacity-50 p-1" title="Borrar">
+                                        <FiTrash2 size={14} />
+                                    </button>
+                                </div>
                             ) : ( col.accessor(row) ?? '-' )}
                           </td>
                         );
@@ -225,5 +256,4 @@ function ResumenMatriz() {
     </div>
   );
 }
-
 export default ResumenMatriz;
