@@ -6,6 +6,7 @@ from app.schemas.catalogo_schemas import (  # Ajusta si el nombre es diferente
     EtapaInDB,
     MuestraInDB,
     OrigenInDB,
+    SecuenciaInDB,
 )
 from pydantic import BaseModel, Field
 
@@ -17,7 +18,7 @@ class DatosGeneralesKeys(BaseModel):
     etapa_id: int
     muestra_id: int
     origen_id: int
-
+    secuencia_id: int
 
 class DatosGeneralesMetadataBase(BaseModel):
     fecha_ingreso: Optional[str] = None
@@ -60,9 +61,7 @@ class DatosGeneralesInDB(DatosGeneralesKeys, DatosGeneralesMetadataBase):
     etapa_ref: Optional[EtapaInDB] = None
     muestra_ref: Optional[MuestraInDB] = None
     origen_ref: Optional[OrigenInDB] = None
-    # Podrías añadir ciclo_ref también si necesitas el nombre del ciclo aquí:
-    # from app.schemas.catalogo_schemas import CicloInDB
-    # ciclo_ref: Optional[CicloInDB] = None
+    secuencia_ref: Optional[SecuenciaInDB] = None
 
     class Config:
         from_attributes = True  # Para Pydantic V2

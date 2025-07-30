@@ -3,10 +3,13 @@ from datetime import datetime
 from typing import List, Optional
 
 # Importa los schemas InDB de tus catálogos (ya deberían estar aquí)
-from app.schemas.catalogo_schemas import CicloInDB as CicloCatalogoInDB
-from app.schemas.catalogo_schemas import EtapaInDB as EtapaCatalogoInDB
-from app.schemas.catalogo_schemas import MuestraInDB as MuestraCatalogoInDB
-from app.schemas.catalogo_schemas import OrigenInDB as OrigenCatalogoInDB
+from app.schemas.catalogo_schemas import (
+    CicloInDB as CicloCatalogoInDB,
+    EtapaInDB as EtapaCatalogoInDB,
+    MuestraInDB as MuestraCatalogoInDB,
+    OrigenInDB as OrigenCatalogoInDB,
+    SecuenciaInDB as SecuenciaCatalogoInDB, # <-- ¡NUEVO!
+)
 from pydantic import BaseModel, Field
 
 # --- Schemas para CicloProcesamiento ---
@@ -56,12 +59,12 @@ class CicloProcesamientoInDB(CicloProcesamientoBase):
 
 class RegistroAnalisisNitrogenoBase(BaseModel):
     # IDs para las relaciones de catálogo
-    ciclo_catalogo_id: int = Field(
-        ..., description="ID del Ciclo general del catálogo."
+    ciclo_catalogo_id: int = Field(..., description="ID del Ciclo general del catálogo."
     )
     etapa_catalogo_id: int = Field(..., description="ID de la Etapa del catálogo.")
     muestra_catalogo_id: int = Field(..., description="ID de la Muestra del catálogo.")
     origen_catalogo_id: int = Field(..., description="ID del Origen del catálogo.")
+    secuencia_catalogo_id: int = Field(..., description="ID de la Secuencia del catálogo.")
 
     # Inputs del usuario
     peso_muestra_n_g: Optional[float] = Field(
@@ -102,6 +105,7 @@ class RegistroAnalisisNitrogenoInDB(RegistroAnalisisNitrogenoBase):
     calc_humedad_usada_referencia_porc: Optional[float] = None
     calc_peso_seco_g: Optional[float] = None
     calc_nitrogeno_base_seca_porc: Optional[float] = None
+    secuencia_catalogo_ref: Optional[SecuenciaCatalogoInDB] = None
 
     created_at: datetime
     updated_at: datetime
@@ -122,12 +126,11 @@ class RegistroAnalisisNitrogenoInDB(RegistroAnalisisNitrogenoBase):
 
 class RegistroAnalisisCenizasBase(BaseModel):
     # IDs para las relaciones de catálogo
-    ciclo_catalogo_id: int = Field(
-        ..., description="ID del Ciclo general del catálogo."
-    )
+    ciclo_catalogo_id: int = Field(..., description="ID del Ciclo general del catálogo." )
     etapa_catalogo_id: int = Field(..., description="ID de la Etapa del catálogo.")
     muestra_catalogo_id: int = Field(..., description="ID de la Muestra del catálogo.")
     origen_catalogo_id: int = Field(..., description="ID del Origen del catálogo.")
+    secuencia_catalogo_id: int = Field( ..., description="ID de la Secuencia del catálogo.")
 
     # No hay fecha_analisis_cenizas aquí, se usa la del CicloProcesamiento.
 
@@ -180,8 +183,7 @@ class RegistroAnalisisCenizasInDB(RegistroAnalisisCenizasBase):
     etapa_catalogo_ref: Optional[EtapaCatalogoInDB] = None
     muestra_catalogo_ref: Optional[MuestraCatalogoInDB] = None
     origen_catalogo_ref: Optional[OrigenCatalogoInDB] = None
-    # Opcional: si quieres devolver también el detalle del ciclo de procesamiento anidado
-    # ciclo_procesamiento_ref: Optional[CicloProcesamientoInDB] = None
+    secuencia_catalogo_ref: Optional[SecuenciaCatalogoInDB] = None
 
     class Config:
         from_attributes = True

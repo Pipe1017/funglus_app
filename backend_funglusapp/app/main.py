@@ -21,6 +21,9 @@ from app.routers import (
 from app.routers import (
     registros_nitrogeno_router,  # Para Registros de Análisis de Nitrógeno
 )
+from app.routers import (
+    informes_router,  # Para Registros de Análisis de Nitrógeno
+)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -67,6 +70,7 @@ app.include_router(datos_generales_router.router, prefix="/api/v1")
 app.include_router(ciclos_procesamiento_router.router, prefix="/api/v1")
 app.include_router(registros_nitrogeno_router.router, prefix="/api/v1")
 app.include_router(registros_cenizas_router.router, prefix="/api/v1")
+app.include_router(informes_router.router, prefix="/api/v1")
 
 
 # -----------------------------

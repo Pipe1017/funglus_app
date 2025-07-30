@@ -91,6 +91,23 @@ class Origen(Base):
     # TODO: Actualizar para RegistroAnalisisCenizas
     # datos_cenizas = relationship("DatosCenizas", back_populates="origen_ref") # Comentado
 
+class Secuencia(Base):
+    __tablename__ = "catalogo_secuencias"
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, unique=True, index=True, nullable=False)
+    descripcion = Column(String, nullable=True)
+    # Relaciones
+    datos_generales_lab = relationship(
+        "DatosGeneralesLaboratorio", back_populates="secuencia_ref"
+    )
+    registros_nitrogeno = relationship(
+        "RegistroAnalisisNitrogeno", back_populates="secuencia_catalogo_ref"
+    )
+    registros_cenizas = relationship(
+        "RegistroAnalisisCenizas", back_populates="secuencia_catalogo_ref"
+    )
+    
+
 
 # --- TABLA DE DATOS GENERALES DE LABORATORIO (PRINCIPAL) ---
 
@@ -115,12 +132,16 @@ class DatosGeneralesLaboratorio(Base):
     origen_id = Column(
         Integer, ForeignKey("catalogo_origenes.id"), nullable=False, index=True
     )
+    secuencia_id = Column(
+        Integer, ForeignKey("catalogo_secuencias.id"), nullable=False, index=True
+    )
 
     # Referencias a los catálogos
     ciclo_ref = relationship("Ciclo", back_populates="datos_generales_lab")
     etapa_ref = relationship("Etapa", back_populates="datos_generales_lab")
     muestra_ref = relationship("Muestra", back_populates="datos_generales_lab")
     origen_ref = relationship("Origen", back_populates="datos_generales_lab")
+    secuencia_ref = relationship("Secuencia", back_populates="datos_generales_lab")
 
     # Campos de metadatos y resultados
     fecha_ingreso = Column(String, nullable=True)  # Considerar DateTime
@@ -129,9 +150,7 @@ class DatosGeneralesLaboratorio(Base):
     peso_h2_g = Column(Float, nullable=True)
     humedad_1_porc = Column(Float, nullable=True, comment="Humedad 1 (%)")
     humedad_2_porc = Column(Float, nullable=True, comment="Humedad 2 (%)")
-    humedad_prom_porc = Column(
-        Float, nullable=True, comment="Humedad Promedio (calculada)"
-    )
+    humedad_prom_porc = Column(Float, nullable=True, comment="Humedad Promedio (calculada)")
     peso_ph_g = Column(Float, nullable=True)
     ph_valor = Column(Float, nullable=True)
     fdr_1_kgf = Column(Float, nullable=True)
@@ -156,11 +175,12 @@ class DatosGeneralesLaboratorio(Base):
             "etapa_id",
             "muestra_id",
             "origen_id",
+            "secuencia_id",
             name="_datos_laboratorio_claves_uc",
         ),
         {
             "comment": "Tabla central para metadatos y resultados consolidados por combinación de catálogos."
-        },  # Moví el comentario aquí
+        },
     )
 
 
@@ -232,7 +252,6 @@ class RegistroAnalisisNitrogeno(Base):
     ciclo_procesamiento_id = Column(
         Integer, ForeignKey("ciclos_procesamiento.id"), nullable=False, index=True
     )
-
     ciclo_catalogo_id = Column(
         Integer, ForeignKey("catalogo_ciclos.id"), nullable=False, index=True
     )
@@ -245,6 +264,9 @@ class RegistroAnalisisNitrogeno(Base):
     origen_catalogo_id = Column(
         Integer, ForeignKey("catalogo_origenes.id"), nullable=False, index=True
     )
+    secuencia_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_secuencias.id"), nullable=False, index=True
+    )
 
     # Relaciones
     ciclo_procesamiento_ref = relationship(
@@ -254,6 +276,7 @@ class RegistroAnalisisNitrogeno(Base):
     etapa_catalogo_ref = relationship("Etapa", back_populates="registros_nitrogeno")
     muestra_catalogo_ref = relationship("Muestra", back_populates="registros_nitrogeno")
     origen_catalogo_ref = relationship("Origen", back_populates="registros_nitrogeno")
+    secuencia_catalogo_ref = relationship("Secuencia", back_populates="registros_nitrogeno")
 
     # Inputs del Usuario
     peso_muestra_n_g = Column(Float, nullable=True, comment="Peso N [g] (a)")
@@ -294,6 +317,7 @@ class RegistroAnalisisCenizas(Base):
             "etapa_catalogo_id",
             "muestra_catalogo_id",
             "origen_catalogo_id",
+            "secuencia_catalogo_id",
             name="_registro_cenizas_lote_catalogo_uc",
         ),
         {
@@ -324,12 +348,16 @@ class RegistroAnalisisCenizas(Base):
     origen_catalogo_id = Column(
         Integer, ForeignKey("catalogo_origenes.id"), nullable=False, index=True
     )
+    secuencia_catalogo_id = Column(
+        Integer, ForeignKey("catalogo_secuencias.id"), nullable=False, index=True
+    )
 
     # Referencias unidireccionales a los catálogos (para cargar nombres, etc.)
     ciclo_catalogo_ref = relationship("Ciclo")
     etapa_catalogo_ref = relationship("Etapa")
     muestra_catalogo_ref = relationship("Muestra")
     origen_catalogo_ref = relationship("Origen")
+    secuencia_catalogo_ref = relationship("Secuencia", back_populates="registros_cenizas")
 
     # Ya no hay 'fecha_analisis_cenizas' aquí, se usa la del CicloProcesamiento.
 

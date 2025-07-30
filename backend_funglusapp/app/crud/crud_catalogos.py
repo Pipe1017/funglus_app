@@ -430,3 +430,29 @@ def update_origen(
 def delete_origen(db: Session, item_id: int) -> bool:
     """Borra un origen por su ID."""
     return delete_catalogo_simple(db, models.Origen, item_id)
+
+def get_secuencia_by_id(db: Session, item_id: int) -> Optional[models.Secuencia]:
+    """Obtiene una secuencia por su ID."""
+    return get_catalogo_simple_by_id(db, models.Secuencia, item_id)
+
+def get_secuencia_by_nombre(db: Session, nombre: str) -> Optional[models.Secuencia]:
+    """Obtiene una secuencia por su nombre."""
+    return get_catalogo_simple_by_nombre(db, models.Secuencia, nombre)
+
+def get_all_secuencias(db: Session, skip: int = 0, limit: int = 100) -> List[models.Secuencia]:
+    """Obtiene todas las secuencias."""
+    return get_all_catalogo_simple(db, models.Secuencia, skip, limit)
+
+def create_secuencia(db: Session, item_create: schemas.SecuenciaCreate) -> models.Secuencia:
+    """Crea una nueva secuencia."""
+    return create_catalogo_simple(db, models.Secuencia, item_create)
+
+def update_secuencia(
+    db: Session, item_id: int, item_update: schemas.SecuenciaUpdate
+) -> Optional[models.Secuencia]:
+    """Actualiza una secuencia existente."""
+    return update_catalogo_simple(db, models.Secuencia, item_id, item_update)
+
+def delete_secuencia(db: Session, item_id: int) -> bool:
+    """Borra una secuencia por su ID."""
+    return delete_catalogo_simple(db, models.Secuencia, item_id)

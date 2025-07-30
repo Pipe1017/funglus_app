@@ -1,16 +1,15 @@
 # backend_funglusapp/app/crud/crud_datos_generales.py
 from typing import List, Optional
 
-from app.db import models  # Tus modelos SQLAlchemy
-from app.schemas import datos_schemas as schemas  # Tus schemas Pydantic para datos
+from app.db import models
+from app.schemas import datos_schemas as schemas
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 # --- CRUD para DatosGeneralesLaboratorio ---
 
-
 def get_datos_generales_entry(
-    db: Session, ciclo_id: int, etapa_id: int, muestra_id: int, origen_id: int
+    db: Session, ciclo_id: int, etapa_id: int, muestra_id: int, origen_id: int, secuencia_id: int # <-- MODIFICADO
 ) -> Optional[models.DatosGeneralesLaboratorio]:
     """Obtiene una entrada específica de DatosGeneralesLaboratorio por sus claves."""
     return (
@@ -20,6 +19,7 @@ def get_datos_generales_entry(
             models.DatosGeneralesLaboratorio.etapa_id == etapa_id,
             models.DatosGeneralesLaboratorio.muestra_id == muestra_id,
             models.DatosGeneralesLaboratorio.origen_id == origen_id,
+            models.DatosGeneralesLaboratorio.secuencia_id == secuencia_id, # <-- MODIFICADO
         )
         .first()
     )
@@ -33,7 +33,7 @@ def get_or_create_datos_generales_entry(
     Si no existe, crea un nuevo placeholder.
     """
     print(
-        f"CRUD DGL: Buscando con ciclo_id={keys.ciclo_id}, etapa_id={keys.etapa_id}, muestra_id={keys.muestra_id}, origen_id={keys.origen_id}"
+        f"CRUD DGL: Buscando con ciclo_id={keys.ciclo_id}, etapa_id={keys.etapa_id}, muestra_id={keys.muestra_id}, origen_id={keys.origen_id}, secuencia_id={keys.secuencia_id}" # <-- MODIFICADO
     )
     db_entry = get_datos_generales_entry(
         db,
@@ -41,6 +41,7 @@ def get_or_create_datos_generales_entry(
         etapa_id=keys.etapa_id,
         muestra_id=keys.muestra_id,
         origen_id=keys.origen_id,
+        secuencia_id=keys.secuencia_id, # <-- MODIFICADO
     )
 
     if db_entry:
@@ -48,30 +49,27 @@ def get_or_create_datos_generales_entry(
         return db_entry
     else:
         print(f"CRUD DGL: No se encontró. Creando placeholder...")
-        new_entry = models.DatosGeneralesLaboratorio(
-            ciclo_id=keys.ciclo_id,
-            etapa_id=keys.etapa_id,
-            muestra_id=keys.muestra_id,
-            origen_id=keys.origen_id,
-            # Todos los demás campos de metadatos serán NULL por defecto
-        )
+        # El objeto `keys` de Pydantic ya contiene todos los campos necesarios.
+        new_entry = models.DatosGeneralesLaboratorio(**keys.model_dump()) # <-- MODIFICADO
+
         db.add(new_entry)
         try:
             db.commit()
             db.refresh(new_entry)
             print(f"CRUD DGL: Placeholder CREADO con id={new_entry.id}")
             return new_entry
-        except (
-            IntegrityError
-        ):  # Debería ser raro aquí si la búsqueda inicial fue exhaustiva
+        except IntegrityError:
             db.rollback()
             print(f"CRUD DGL: IntegrityError al crear. Re-consultando...")
+            # En caso de una condición de carrera, otro proceso podría haber creado la entrada.
+            # Volvemos a buscarla.
             existing_entry = get_datos_generales_entry(
                 db,
                 ciclo_id=keys.ciclo_id,
                 etapa_id=keys.etapa_id,
                 muestra_id=keys.muestra_id,
                 origen_id=keys.origen_id,
+                secuencia_id=keys.secuencia_id, # <-- MODIFICADO
             )
             if existing_entry:
                 print(
@@ -95,18 +93,20 @@ def update_datos_generales_entry(
     data_update: schemas.DatosGeneralesUpdate,
 ) -> Optional[models.DatosGeneralesLaboratorio]:
     """Actualiza una entrada existente de DatosGeneralesLaboratorio."""
+    # La función get_datos_generales_entry ahora busca con la clave completa
     db_entry = get_datos_generales_entry(
         db,
         ciclo_id=keys.ciclo_id,
         etapa_id=keys.etapa_id,
         muestra_id=keys.muestra_id,
         origen_id=keys.origen_id,
+        secuencia_id=keys.secuencia_id, # <-- MODIFICADO
     )
+    
+    # Si no existe, la creamos antes de actualizarla.
     if not db_entry:
-        print(
-            f"CRUD DGL: No se encontró entrada para actualizar con claves: {keys.model_dump()}"
-        )
-        return None
+        print(f"CRUD DGL: No se encontró entrada para actualizar, creando una nueva con claves: {keys.model_dump()}")
+        db_entry = get_or_create_datos_generales_entry(db, keys)
 
     update_data_dict = data_update.model_dump(exclude_unset=True)
     print(
@@ -121,45 +121,20 @@ def update_datos_generales_entry(
                 f"Advertencia CRUD DGL: El campo '{key}' no existe en el modelo DatosGeneralesLaboratorio."
             )
 
-    # --- LÓGICA DE CÁLCULO ---
-    # Humedad Promedio
+    # --- LÓGICA DE CÁLCULO (sin cambios) ---
     if db_entry.humedad_1_porc is not None and db_entry.humedad_2_porc is not None:
-        db_entry.humedad_prom_porc = round(
-            (db_entry.humedad_1_porc + db_entry.humedad_2_porc) / 2, 3
-        )
-        print(f"CRUD DGL: Humedad Promedio calculada: {db_entry.humedad_prom_porc}")
-    # Si solo se actualiza uno de los dos, y no se envió humedad_prom_porc, podría ponerse a None
+        db_entry.humedad_prom_porc = round((db_entry.humedad_1_porc + db_entry.humedad_2_porc) / 2, 3)
     elif "humedad_1_porc" in update_data_dict or "humedad_2_porc" in update_data_dict:
-        if (
-            "humedad_prom_porc" not in update_data_dict
-        ):  # Solo si el cliente no envió un valor explícito
+        if "humedad_prom_porc" not in update_data_dict:
             db_entry.humedad_prom_porc = None
 
-    # FDR Promedio
-    if (
-        db_entry.fdr_1_kgf is not None
-        and db_entry.fdr_2_kgf is not None
-        and db_entry.fdr_3_kgf is not None
-    ):
-        db_entry.fdr_prom_kgf = round(
-            (db_entry.fdr_1_kgf + db_entry.fdr_2_kgf + db_entry.fdr_3_kgf) / 3, 3
-        )
-        print(f"CRUD DGL: FDR Promedio calculado: {db_entry.fdr_prom_kgf}")
-    elif (
-        "fdr_1_kgf" in update_data_dict
-        or "fdr_2_kgf" in update_data_dict
-        or "fdr_3_kgf" in update_data_dict
-    ):
-        if (
-            "fdr_prom_kgf" not in update_data_dict
-        ):  # Solo si el cliente no envió un valor explícito
+    if (db_entry.fdr_1_kgf is not None and db_entry.fdr_2_kgf is not None and db_entry.fdr_3_kgf is not None):
+        db_entry.fdr_prom_kgf = round((db_entry.fdr_1_kgf + db_entry.fdr_2_kgf + db_entry.fdr_3_kgf) / 3, 3)
+    elif ("fdr_1_kgf" in update_data_dict or "fdr_2_kgf" in update_data_dict or "fdr_3_kgf" in update_data_dict):
+        if "fdr_prom_kgf" not in update_data_dict:
             db_entry.fdr_prom_kgf = None
 
-    # Los campos resultado_cenizas_porc, resultado_nitrogeno_total_porc, etc.,
-    # se actualizarán desde los CRUD de DatosCenizas y DatosNitrogeno.
-
     try:
-        db.add(db_entry)  # SQLAlchemy rastrea los cambios
         db.commit()
         db.refresh(db_entry)
         print(f"CRUD DGL: Entrada id={db_entry.id} actualizada exitosamente.")
@@ -175,7 +150,7 @@ def get_datos_generales_by_ciclo(
 ) -> List[models.DatosGeneralesLaboratorio]:
     """
     Obtiene todas las entradas de DatosGeneralesLaboratorio para un ciclo_id específico,
-    incluyendo los datos relacionados de etapa, muestra y origen.
+    incluyendo los datos relacionados de los catálogos.
     """
     query = (
         db.query(models.DatosGeneralesLaboratorio)
@@ -183,30 +158,27 @@ def get_datos_generales_by_ciclo(
             joinedload(models.DatosGeneralesLaboratorio.etapa_ref),
             joinedload(models.DatosGeneralesLaboratorio.muestra_ref),
             joinedload(models.DatosGeneralesLaboratorio.origen_ref),
-            # Si añadiste ciclo_ref al Pydantic schema, también añádelo aquí:
-            # joinedload(models.DatosGeneralesLaboratorio.ciclo_ref)
+            joinedload(models.DatosGeneralesLaboratorio.secuencia_ref), # <-- MODIFICADO
         )
         .filter(models.DatosGeneralesLaboratorio.ciclo_id == ciclo_id)
         .order_by(
             models.DatosGeneralesLaboratorio.etapa_id,
             models.DatosGeneralesLaboratorio.muestra_id,
             models.DatosGeneralesLaboratorio.origen_id,
+            models.DatosGeneralesLaboratorio.secuencia_id, # <-- MODIFICADO
         )
     )
     return query.offset(skip).limit(limit).all()
 
 
 def delete_datos_generales_entry(
-    db: Session, ciclo_id: int, etapa_id: int, muestra_id: int, origen_id: int
+    db: Session, ciclo_id: int, etapa_id: int, muestra_id: int, origen_id: int, secuencia_id: int # <-- MODIFICADO
 ) -> bool:
     """Borra una entrada específica de DatosGeneralesLaboratorio."""
-    db_entry = get_datos_generales_entry(db, ciclo_id, etapa_id, muestra_id, origen_id)
+    db_entry = get_datos_generales_entry(db, ciclo_id, etapa_id, muestra_id, origen_id, secuencia_id) # <-- MODIFICADO
     if not db_entry:
         return False
 
-    # Considerar si el borrado de una entrada de datos generales debe afectar
-    # a las entradas relacionadas en DatosCenizas o DatosNitrogeno.
-    # Por ahora, solo borra la entrada de datos generales.
     try:
         db.delete(db_entry)
         db.commit()
@@ -215,4 +187,4 @@ def delete_datos_generales_entry(
     except Exception as e:
         db.rollback()
         print(f"CRUD DGL: ERROR AL BORRAR entrada id={db_entry.id}: {e}")
-        return False  # O podrías levantar una excepción
+        return False
