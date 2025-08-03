@@ -10,7 +10,7 @@ const DATOS_LABORATORIO_CICLO_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/
 const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/entry`;
 
 const pinnedColumnsConfig = {
-  left: ['etapa_ref.nombre', 'muestra_ref.nombre', 'origen_ref.nombre'],
+  left: ['etapa_ref.nombre', 'muestra_ref.nombre', 'origen_ref.nombre', 'secuencia_ref.nombre'],
   right: ['actions']
 };
 
@@ -51,7 +51,8 @@ function ResumenMatriz({ onEditClick }) {
     const baseColumns = [
       { key: 'etapa_ref.nombre', label: 'Etapa', accessor: (row) => row.etapa_ref?.nombre || `ID: ${row.etapa_id}`, width: '7rem' }, // Ancho reducido
       { key: 'muestra_ref.nombre', label: 'Muestra', accessor: (row) => row.muestra_ref?.nombre || (row.muestra_id ? `ID: ${row.muestra_id}` : 'N/A'), width: '7rem' }, // Ancho reducido
-      { key: 'origen_ref.nombre', label: 'Origen', accessor: (row) => row.origen_ref?.nombre || (row.origen_id ? `ID: ${row.origen_id}` : 'N/A'), width: '7rem' } // Ancho reducido
+      { key: 'origen_ref.nombre', label: 'Origen', accessor: (row) => row.origen_ref?.nombre || (row.origen_id ? `ID: ${row.origen_id}` : 'N/A'), width: '7rem' }, // Ancho reducido
+      { key: 'secuencia_ref.nombre', label: 'Secuencia', accessor: (row) => row.secuencia_ref?.nombre || `ID: ${row.secuencia_id}`, width: '7rem' }
     ];
     let metadataFields = [];
     if (typeof allPossibleMetadataFields === 'object' && allPossibleMetadataFields !== null) {
@@ -114,15 +115,31 @@ function ResumenMatriz({ onEditClick }) {
   }, [selectedCicloCatalogoId, fetchDatosMatriz]);
 
   const handleDeleteEntry = async (rowData) => {
-    const { ciclo_id, etapa_id, muestra_id, origen_id } = rowData;
+    const { ciclo_id, etapa_id, muestra_id, origen_id, secuencia_id } = rowData; // <-- Asegúrate de tener secuencia_id
     if (!window.confirm(`¿Seguro que quieres borrar la entrada para la etapa "${rowData.etapa_ref?.nombre}"?`)) return;
+
     setDeleteStatus({ isLoading: true, error: '', success: '' });
+    
+    // MODIFICADO: Construir la URL con query parameters
+    const url = new URL(DATOS_LABORATORIO_ENTRY_ENDPOINT);
+    url.searchParams.append('ciclo_id', ciclo_id);
+    url.searchParams.append('etapa_id', etapa_id);
+    url.searchParams.append('muestra_id', muestra_id);
+    url.searchParams.append('origen_id', origen_id);
+    url.searchParams.append('secuencia_id', secuencia_id);
+
     try {
-      const response = await fetch(DATOS_LABORATORIO_ENTRY_ENDPOINT, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ciclo_id, etapa_id, muestra_id, origen_id }) });
+      // MODIFICADO: No se envía `body` en la solicitud DELETE
+      const response = await fetch(url, { 
+        method: 'DELETE', 
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
       if (!response.ok) throw new Error((await response.json()).detail || 'Error al borrar.');
+      
       const result = await response.json();
       setDeleteStatus({ isLoading: false, error: '', success: result.message || 'Borrado exitoso.' });
-      fetchDatosMatriz();
+      fetchDatosMatriz(); // Recargar la matriz
     } catch (err) {
       setDeleteStatus({ isLoading: false, error: `Error: ${err.message}`, success: '' });
     } finally {

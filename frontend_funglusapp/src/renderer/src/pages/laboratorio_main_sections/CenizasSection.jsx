@@ -200,6 +200,9 @@ function CenizasSection() {
       etapa_catalogo_id: selectedCatalogoKeys.etapaId,
       muestra_catalogo_id: selectedCatalogoKeys.muestraId,
       origen_catalogo_id: selectedCatalogoKeys.origenId,
+      secuencia_catalogo_id: selectedCatalogoKeys.secuenciaId,
+
+
       peso_crisol_vacio_g: a,
       peso_crisol_mas_muestra_g: b,
       peso_crisol_mas_cenizas_g: c

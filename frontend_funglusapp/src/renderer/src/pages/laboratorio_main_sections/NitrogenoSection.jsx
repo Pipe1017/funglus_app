@@ -119,7 +119,8 @@ function NitrogenoSection() {
       ciclo_id: selectedCatalogoKeys.cicloId,
       etapa_id: selectedCatalogoKeys.etapaId,
       muestra_id: selectedCatalogoKeys.muestraId || 0,
-      origen_id: selectedCatalogoKeys.origenId || 0
+      origen_id: selectedCatalogoKeys.origenId || 0,
+      secuencia_id: selectedCatalogoKeys.secuenciaId || 0
     }
     setIsFetchingHumedad(true)
     setHumedadMessage('Buscando H%...')
@@ -259,6 +260,7 @@ function NitrogenoSection() {
       etapa_catalogo_id: selectedCatalogoKeys.etapaId,
       muestra_catalogo_id: selectedCatalogoKeys.muestraId,
       origen_catalogo_id: selectedCatalogoKeys.origenId,
+      secuencia_catalogo_id: selectedCatalogoKeys.secuenciaId,
       peso_muestra_n_g: parseFloat(registroForm.peso_muestra_n_g),
       n_hcl_normalidad: parseFloat(registroForm.n_hcl_normalidad),
       vol_hcl_gastado_cm3: parseFloat(registroForm.vol_hcl_gastado_cm3)

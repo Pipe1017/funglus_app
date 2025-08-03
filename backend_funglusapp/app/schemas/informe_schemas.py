@@ -17,6 +17,8 @@ class InformeResumenRow(BaseModel):
     resultado_cenizas_porc: Optional[float] = None
     resultado_nitrogeno_total_porc: Optional[float] = None
     resultado_nitrogeno_seca_porc: Optional[float] = None
+    resultado_ph_valor: Optional[float] = None # <-- ¡NUEVO!
+    resultado_fdr_prom_kgf: Optional[float] = None # <-- ¡NUEVO!
 
     class Config:
         from_attributes = True

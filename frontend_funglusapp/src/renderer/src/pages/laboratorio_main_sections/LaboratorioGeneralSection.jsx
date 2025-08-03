@@ -23,10 +23,15 @@ function LaboratorioGeneralSection() {
     console.log('LaboratorioGeneralSection: Editar fila desde matriz:', rowToEdit);
     // Extraer las claves y nombres del objeto 'row' de la matriz
     const keys = {
+      id: rowToEdit.id,
+
       cicloId: rowToEdit.ciclo_id,
       etapaId: rowToEdit.etapa_id,
       muestraId: rowToEdit.muestra_id,
       origenId: rowToEdit.origen_id,
+      secuenciaId: rowToEdit.secuencia_id,
+
+
       cicloNombre: rowToEdit.ciclo_ref?.nombre_ciclo,
       etapaNombre: rowToEdit.etapa_ref?.nombre,
       muestraNombre: rowToEdit.muestra_ref?.nombre,
@@ -69,7 +74,8 @@ function LaboratorioGeneralSection() {
           </h3>
           <MetadataForm
             keysFromSection={selectedCatalogoKeys}
-            key={Object.values(selectedCatalogoKeys || {}).join('-')} // Forza re-render si las claves cambian
+            // --- ¡LÍNEA MODIFICADA! ---
+            key={selectedCatalogoKeys.id} // Forza el re-montaje del componente con el ID de la fila
           />
         </div>
       )}

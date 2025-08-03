@@ -48,7 +48,21 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
                     models.DatosGeneralesLaboratorio.muestra_id,
                     models.DatosGeneralesLaboratorio.origen_id
                 ]
-            ).label("single_nitrogeno_seca")
+            ).label("single_nitrogeno_seca"),
+             func.first_value(models.DatosGeneralesLaboratorio.ph_valor).over(
+                partition_by=[
+                    models.DatosGeneralesLaboratorio.etapa_id,
+                    models.DatosGeneralesLaboratorio.muestra_id,
+                    models.DatosGeneralesLaboratorio.origen_id
+                ]
+            ).label("single_ph"),
+             func.first_value(models.DatosGeneralesLaboratorio.fdr_prom_kgf).over(
+                partition_by=[
+                    models.DatosGeneralesLaboratorio.etapa_id,
+                    models.DatosGeneralesLaboratorio.muestra_id,
+                    models.DatosGeneralesLaboratorio.origen_id
+                ]
+            ).label("single_fdr")
         )
         .filter(models.DatosGeneralesLaboratorio.ciclo_id == ciclo_id)
         .subquery()
@@ -65,10 +79,14 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
             func.avg(models.DatosGeneralesLaboratorio.resultado_cenizas_porc).label("avg_cenizas"),
             func.avg(models.DatosGeneralesLaboratorio.resultado_nitrogeno_total_porc).label("avg_nitrogeno_total"),
             func.avg(models.DatosGeneralesLaboratorio.resultado_nitrogeno_seca_porc).label("avg_nitrogeno_seca"),
+            func.avg(models.DatosGeneralesLaboratorio.ph_valor).label("avg_ph"),
+            func.avg(models.DatosGeneralesLaboratorio.fdr_prom_kgf).label("avg_fdr"),
             subquery.c.single_humedad,
             subquery.c.single_cenizas,
             subquery.c.single_nitrogeno_total,
-            subquery.c.single_nitrogeno_seca
+            subquery.c.single_nitrogeno_seca,
+            subquery.c.single_ph,
+            subquery.c.single_fdr
         )
         .join(models.Etapa, models.DatosGeneralesLaboratorio.etapa_id == models.Etapa.id)
         .join(models.Muestra, models.DatosGeneralesLaboratorio.muestra_id == models.Muestra.id)
@@ -91,7 +109,9 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
             subquery.c.single_humedad,
             subquery.c.single_cenizas,
             subquery.c.single_nitrogeno_total,
-            subquery.c.single_nitrogeno_seca
+            subquery.c.single_nitrogeno_seca,
+            subquery.c.single_ph,
+            subquery.c.single_fdr 
         )
         .order_by(models.Etapa.nombre, models.Muestra.nombre, models.Origen.nombre)
         .all()
@@ -113,6 +133,8 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
             resultado_cenizas_porc=row.avg_cenizas if is_average else row.single_cenizas,
             resultado_nitrogeno_total_porc=row.avg_nitrogeno_total if is_average else row.single_nitrogeno_total,
             resultado_nitrogeno_seca_porc=row.avg_nitrogeno_seca if is_average else row.single_nitrogeno_seca,
+            resultado_ph_valor=row.avg_ph if is_average else row.single_ph,
+            resultado_fdr_prom_kgf=row.avg_fdr if is_average else row.single_fdr
         )
         informe_final.append(informe_row)
 

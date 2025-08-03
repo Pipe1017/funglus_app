@@ -104,12 +104,12 @@ def read_datos_generales_for_ciclo(
     summary="Borrar una entrada de la tabla general"
 )
 def delete_datos_generales(
-    keys: schemas.DatosGeneralesKeys, # <-- El body ahora espera la clave completa
+    keys: schemas.DatosGeneralesKeys = Depends(), # <-- MODIFICADO
     db: Session = Depends(database.get_db),
 ):
     """
     Borra una entrada específica de DatosGeneralesLaboratorio.
-    Requiere la clave completa de 5 partes en el cuerpo de la solicitud.
+    Requiere la clave completa de 5 partes como query parameters en la URL.
     """
     deleted = crud.delete_datos_generales_entry(
         db,
@@ -117,7 +117,7 @@ def delete_datos_generales(
         etapa_id=keys.etapa_id,
         muestra_id=keys.muestra_id,
         origen_id=keys.origen_id,
-        secuencia_id=keys.secuencia_id, # <-- MODIFICADO
+        secuencia_id=keys.secuencia_id,
     )
     if not deleted:
         raise HTTPException(
@@ -125,6 +125,7 @@ def delete_datos_generales(
             detail="Entrada de Datos Generales no encontrada para borrar.",
         )
     return {"message": "Entrada de Datos Generales borrada exitosamente"}
+
 
 
 @router.post(

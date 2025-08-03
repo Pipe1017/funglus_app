@@ -71,7 +71,8 @@ function MetadataForm({ keysFromSection }) {
       ciclo_id: keysFromSection.cicloId, // Asegúrate que los nombres coincidan con el schema Pydantic 'DatosGeneralesCreate'
       etapa_id: keysFromSection.etapaId,
       muestra_id: keysFromSection.muestraId || null,
-      origen_id: keysFromSection.origenId || null
+      origen_id: keysFromSection.origenId || null,
+      secuencia_id: keysFromSection.secuenciaId || null
     }
 
     setIsFetching(true)
@@ -124,12 +125,22 @@ function MetadataForm({ keysFromSection }) {
 
   // Efecto para cargar datos cuando las claves de sección cambian.
   useEffect(() => {
-    if (keysFromSection?.cicloId && keysFromSection?.etapaId) {
-      fetchOrCreateEntry()
+    // MODIFICADO: Añadir una comprobación estricta para los 5 IDs
+    if (
+      keysFromSection?.cicloId &&
+      keysFromSection?.etapaId &&
+      keysFromSection?.muestraId &&
+      keysFromSection?.origenId &&
+      keysFromSection?.secuenciaId // <-- ¡La comprobación clave!
+    ) {
+      fetchOrCreateEntry();
     } else {
-      initializeFormData(null) // Limpia el formulario si no hay claves válidas
+      // Si falta alguna de las claves, no intentes hacer fetch y simplemente limpia el formulario.
+      initializeFormData(null);
     }
-  }, [fetchOrCreateEntry, keysFromSection]) // fetchOrCreateEntry es la dependencia principal aquí
+  }, [fetchOrCreateEntry, keysFromSection]); // Las dependencias son correctas
+
+
 
   /**
    * @function handleChange
@@ -214,6 +225,7 @@ function MetadataForm({ keysFromSection }) {
       etapa_id: keysFromSection.etapaId,
       muestra_id: keysFromSection.muestraId || null,
       origen_id: keysFromSection.origenId || null,
+      secuencia_id: keysFromSection.secuenciaId || null,
       ...dataToUpdate
     }
 

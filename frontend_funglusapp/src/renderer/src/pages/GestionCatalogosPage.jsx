@@ -3,6 +3,7 @@ import React from 'react'
 import EtapasManager from '../components/catalogos/EtapasManager'
 import MuestrasManager from '../components/catalogos/MuestrasManager' // <--- IMPORTA
 import OrigenesManager from '../components/catalogos/OrigenesManager' // <--- IMPORTA
+import SecuenciasManager from '../components/catalogos/SecuenciasManager'
 
 function GestionCatalogosPage() {
   return (
@@ -25,6 +26,13 @@ function GestionCatalogosPage() {
         <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Origenes</h2>
         <OrigenesManager /> {/* <--- AÑADE */}
       </div>
+
+    
+      <div className="p-6 bg-white rounded-lg shadow-lg border">
+        <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b pb-3">Secuencias</h2>
+        <SecuenciasManager />
+      </div>
+      
     </div>
   )
 }
