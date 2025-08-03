@@ -62,6 +62,7 @@ function LaboratorioGeneralSection() {
           onConfirm={handleCatalogoKeysConfirm}
           onClear={handleCatalogoKeysClear}
           value={selectedCatalogoKeys} // Pasamos el estado para controlar los selectores
+          skipValidation={true}
         />
       </div>
 

@@ -19,6 +19,7 @@ class InformeResumenRow(BaseModel):
     resultado_nitrogeno_seca_porc: Optional[float] = None
     resultado_ph_valor: Optional[float] = None # <-- ¡NUEVO!
     resultado_fdr_prom_kgf: Optional[float] = None # <-- ¡NUEVO!
+    fecha_ingreso: Optional[str] = None # Usamos string para compatibilidad
 
     class Config:
         from_attributes = True

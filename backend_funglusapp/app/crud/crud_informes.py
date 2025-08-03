@@ -75,6 +75,8 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
             models.Muestra.nombre.label("muestra_nombre"),
             models.Origen.nombre.label("origen_nombre"),
             func.count(models.DatosGeneralesLaboratorio.secuencia_id).label("secuencias_count"),
+            func.max(models.DatosGeneralesLaboratorio.fecha_ingreso).label("max_fecha_ingreso"),
+            
             func.avg(models.DatosGeneralesLaboratorio.humedad_prom_porc).label("avg_humedad"),
             func.avg(models.DatosGeneralesLaboratorio.resultado_cenizas_porc).label("avg_cenizas"),
             func.avg(models.DatosGeneralesLaboratorio.resultado_nitrogeno_total_porc).label("avg_nitrogeno_total"),
@@ -129,6 +131,7 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
             origen_nombre=row.origen_nombre,
             tipo_agregacion="Promedio" if is_average else "Individual",
             secuencias_count=count,
+            fecha_ingreso=row.max_fecha_ingreso,
             resultado_humedad_prom_porc=row.avg_humedad if is_average else row.single_humedad,
             resultado_cenizas_porc=row.avg_cenizas if is_average else row.single_cenizas,
             resultado_nitrogeno_total_porc=row.avg_nitrogeno_total if is_average else row.single_nitrogeno_total,
