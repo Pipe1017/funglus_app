@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { FiAlertTriangle, FiLayers, FiRefreshCw } from 'react-icons/fi'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
+import { FiAlertTriangle, FiLayers, FiRefreshCw, FiDownload } from 'react-icons/fi'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import html2canvas from 'html2canvas' // <-- ¡NUEVA IMPORTACIÓN!
+import jsPDF from 'jspdf' // <-- ¡NUEVA IMPORTACIÓN!
 
 const FASTAPI_BASE_URL = 'http://localhost:8000/api/v1'
 
@@ -117,13 +119,17 @@ function InformeGraficos({ data }) {
 
 
 // --- COMPONENTE PRINCIPAL ---
+// --- COMPONENTE PRINCIPAL (CORREGIDO Y COMPLETO) ---
 function InformeResumen() {
   const [ciclos, setCiclos] = useState([]);
   const [selectedCicloId, setSelectedCicloId] = useState('');
   const [informeData, setInformeData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const exportableContentRef = useRef(null);
 
+  // --- CÓDIGO RESTAURADO ---
   const fetchCiclos = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -142,6 +148,7 @@ function InformeResumen() {
     fetchCiclos();
   }, [fetchCiclos]);
   
+  // --- CÓDIGO RESTAURADO ---
   const fetchInforme = useCallback(async () => {
     if (!selectedCicloId) {
       setInformeData([]);
@@ -165,24 +172,56 @@ function InformeResumen() {
     fetchInforme();
   }, [selectedCicloId]);
 
+  // --- CÓDIGO RESTAURADO ---
   const renderCell = (value) => {
     if (typeof value === 'number') return value.toFixed(2);
     return value ?? '-';
   };
   
+  // --- CÓDIGO RESTAURADO ---
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
+  const handleExport = () => {
+    if (!exportableContentRef.current) return;
+    setIsExporting(true);
+    html2canvas(exportableContentRef.current, { scale: 2 })
+      .then((canvas) => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const imgX = (pdfWidth - imgWidth * ratio) / 2;
+        const imgY = (pdfHeight - imgHeight * ratio) / 2;
+        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+        pdf.save(`resumen_ciclo_${selectedCicloId}.pdf`);
+      })
+      .finally(() => setIsExporting(false));
+  };
+
   return (
     <div className="space-y-4">
       <div className="p-4 bg-gray-50 rounded-lg border">
-        <label htmlFor="informeCicloSelect" className="block text-sm font-medium text-gray-700 mb-1">
-          <FiLayers className="inline mr-2" />
-          Seleccione un Ciclo para ver su Resumen:
-        </label>
-        <div className="flex items-center gap-x-2">
+        <div className="flex justify-between items-center">
+            <label htmlFor="informeCicloSelect" className="block text-sm font-medium text-gray-700 mb-1">
+              <FiLayers className="inline mr-2" />
+              Seleccione un Ciclo para ver su Resumen:
+            </label>
+            <button 
+              onClick={handleExport} 
+              disabled={isExporting || !selectedCicloId || informeData.length === 0}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
+            >
+              <FiDownload className="mr-1.5" />
+              {isExporting ? 'Exportando...' : 'Exportar a PDF'}
+            </button>
+        </div>
+        <div className="flex items-center gap-x-2 mt-2">
           <select
             id="informeCicloSelect"
             value={selectedCicloId}
@@ -201,54 +240,57 @@ function InformeResumen() {
 
       {error && <p className="text-sm text-red-600 p-3 bg-red-50 border rounded"><FiAlertTriangle className="inline mr-2" />{error}</p>}
       
-      {selectedCicloId && (
-        <>
-          <div className="mt-4 overflow-x-auto shadow-md rounded-lg border">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Etapa</th>
-                  <th className="px-3 py-2 text-left font-semibold">Muestra</th>
-                  <th className="px-3 py-2 text-left font-semibold">Origen</th>
-                  <th className="px-3 py-2 text-left font-semibold">Fecha Ingreso</th>
-                  <th className="px-3 py-2 text-center font-semibold">Tipo</th>
-                  <th className="px-3 py-2 text-right font-semibold">Humedad (%)</th>
-                  <th className="px-3 py-2 text-right font-semibold">Cenizas (%)</th>
-                  <th className="px-3 py-2 text-right font-semibold">N Total (%)</th>
-                  <th className="px-3 py-2 text-right font-semibold">N Seca (%)</th>
-                  <th className="px-3 py-2 text-right font-semibold">pH</th>
-                  <th className="px-3 py-2 text-right font-semibold">FDR (Kgf)</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y">
-                {isLoading && <tr><td colSpan="11" className="p-4 text-center italic">Cargando...</td></tr>}
-                {!isLoading && informeData.length === 0 && <tr><td colSpan="11" className="p-4 text-center">No hay datos.</td></tr>}
-                {!isLoading && informeData.map((row, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-3 py-2">{row.etapa_nombre}</td>
-                    <td className="px-3 py-2">{row.muestra_nombre}</td>
-                    <td className="px-3 py-2">{row.origen_nombre}</td>
-                    <td className="px-3 py-2">{formatDate(row.fecha_ingreso)}</td>
-                    <td className="px-3 py-2 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${row.tipo_agregacion === 'Promedio' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                        {row.tipo_agregacion} {row.tipo_agregacion === 'Promedio' && `(${row.secuencias_count})`}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_humedad_prom_porc)}</td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_cenizas_porc)}</td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_nitrogeno_total_porc)}</td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_nitrogeno_seca_porc)}</td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_ph_valor)}</td>
-                    <td className="px-3 py-2 text-right">{renderCell(row.resultado_fdr_prom_kgf)}</td>
+      <div ref={exportableContentRef}>
+        {selectedCicloId && (
+          <>
+            <div className="mt-4 overflow-x-auto shadow-md rounded-lg border">
+              {/* --- CÓDIGO DE LA TABLA RESTAURADO --- */}
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold">Etapa</th>
+                    <th className="px-3 py-2 text-left font-semibold">Muestra</th>
+                    <th className="px-3 py-2 text-left font-semibold">Origen</th>
+                    <th className="px-3 py-2 text-left font-semibold">Fecha Ingreso</th>
+                    <th className="px-3 py-2 text-center font-semibold">Tipo</th>
+                    <th className="px-3 py-2 text-right font-semibold">Humedad (%)</th>
+                    <th className="px-3 py-2 text-right font-semibold">Cenizas (%)</th>
+                    <th className="px-3 py-2 text-right font-semibold">N Total (%)</th>
+                    <th className="px-3 py-2 text-right font-semibold">N Seca (%)</th>
+                    <th className="px-3 py-2 text-right font-semibold">pH</th>
+                    <th className="px-3 py-2 text-right font-semibold">FDR (Kgf)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {informeData.length > 0 && <InformeGraficos data={informeData} />}
-        </>
-      )}
+                </thead>
+                <tbody className="bg-white divide-y">
+                  {isLoading && <tr><td colSpan="11" className="p-4 text-center italic">Cargando...</td></tr>}
+                  {!isLoading && informeData.length === 0 && <tr><td colSpan="11" className="p-4 text-center">No hay datos.</td></tr>}
+                  {!isLoading && informeData.map((row, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-3 py-2">{row.etapa_nombre}</td>
+                      <td className="px-3 py-2">{row.muestra_nombre}</td>
+                      <td className="px-3 py-2">{row.origen_nombre}</td>
+                      <td className="px-3 py-2">{formatDate(row.fecha_ingreso)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${row.tipo_agregacion === 'Promedio' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                          {row.tipo_agregacion} {row.tipo_agregacion === 'Promedio' && `(${row.secuencias_count})`}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_humedad_prom_porc)}</td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_cenizas_porc)}</td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_nitrogeno_total_porc)}</td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_nitrogeno_seca_porc)}</td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_ph_valor)}</td>
+                      <td className="px-3 py-2 text-right">{renderCell(row.resultado_fdr_prom_kgf)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {informeData.length > 0 && <InformeGraficos data={informeData} />}
+          </>
+        )}
+      </div>
     </div>
   );
 }
