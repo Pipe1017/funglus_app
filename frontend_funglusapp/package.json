@@ -20,29 +20,53 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
+    "electron-log": "^5.1.5",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.1",
-    "react-icons": "^5.2.0",
-    "react-router-dom": "^7.6.0",
-    "recharts": "^3.1.0"
+    "jspdf": "^2.5.1",
+    "react-icons": "^5.2.1",
+    "react-router-dom": "^6.23.1",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.0.0",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.21",
-    "electron": "^35.1.5",
-    "electron-builder": "^25.1.8",
-    "electron-vite": "^3.1.0",
-    "eslint": "^9.24.0",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "postcss": "^8.5.3",
-    "prettier": "^3.5.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwindcss": "^3.4.17",
-    "vite": "^6.2.6"
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "^31.0.1",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.3",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.7",
+    "postcss": "^8.4.38",
+    "prettier": "^3.3.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.1"
+  },
+  "build": {
+    "appId": "com.funglusapp.desktop",
+    "productName": "FunglusApp",
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend_funglusapp/dist/funglusapp_backend.exe",
+        "to": "assets/funglusapp_backend.exe"
+      },
+      {
+        "from": "../backend_funglusapp/funglusapp_db_simple.db",
+        "to": "assets/funglusapp_db_simple.db"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true
+    }
   }
 }

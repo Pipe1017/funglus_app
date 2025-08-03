@@ -1,31 +1,70 @@
-# Python
-__pycache__/
-*.py[cod]
-*.env
-*.sqlite3
-*.log
-
-# FastAPI / Uvicorn
+# ===================================================================
+# Archivos de Entorno y Secretos (NUNCA SUBIR A GIT)
+# ===================================================================
 .env
 .env.*
+*.env
 
-# Node / React
-node_modules/
-dist/
-build/
-.env.local
-.env.development.local
-.env.production.local
+# ===================================================================
+# Python / Backend (FastAPI)
+# ===================================================================
+# Entorno virtual
+venv/
+.venv/
 
-# General
+# Archivos compilados y caches de Python
+__pycache__/
+*.py[cod]
+
+# Archivos de build de PyInstaller
+/backend_funglusapp/build/
+/backend_funglusapp/dist/
+*.spec
+*.exe
+
+# ===================================================================
+# Node / Frontend (React, Vite, Electron)
+# ===================================================================
+# Dependencias
+/frontend_funglusapp/node_modules/
+
+# Archivos de build de Vite y Electron
+/frontend_funglusapp/dist/
+/frontend_funglusapp/out/
+
+# Logs y archivos de depuración
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===================================================================
+# Base de Datos
+# ===================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal*
+
+# ===================================================================
+# Archivos de Sistema Operativo y Editores de Código
+# ===================================================================
+# macOS
 .DS_Store
+
+# VSCode, JetBrains (IntelliJ, PyCharm), etc.
 .vscode/
-*.bak
-*.swp
-*.idea/
+.idea/
 *.iml
 
-# Docker
+# Archivos temporales
+*.log
+*.swp
+*.bak
+
+# ===================================================================
+# Docker (Tus reglas originales)
+# ===================================================================
 *.pid
 *.tar
 *.img

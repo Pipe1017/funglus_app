@@ -1,25 +1,46 @@
-// src/main/index.js
+import { app, BrowserWindow, shell } from 'electron'
+import { join } from 'path'
 import { electronApp, is } from '@electron-toolkit/utils'
-import { app, BrowserWindow, shell } from 'electron' // ipcMain se mantiene por si hay otros handlers
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import { spawn } from 'child_process'
+import path from 'path'
+import log from 'electron-log'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+// Configura electron-log
+// src/main/index.js
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'main.log');
+log.info('Aplicación iniciándose...');
 
-// La constante FASTAPI_BASE_URL ya no es necesaria aquí si el frontend hace las llamadas.
+let backendProcess = null
 
 function createWindow() {
+  if (app.isPackaged) {
+    const assetsPath = path.join(process.resourcesPath, 'assets')
+    const backendPath = path.join(assetsPath, 'funglusapp_backend.exe')
+    const userDataPath = app.getPath('userData')
+    
+    log.info(`Ruta del backend: ${backendPath}`);
+    log.info(`Ruta de datos de usuario (userData): ${userDataPath}`);
+
+    try {
+      backendProcess = spawn(backendPath, [userDataPath])
+      backendProcess.stdout.on('data', (data) => log.info(`Backend: ${data}`))
+      backendProcess.stderr.on('data', (data) => log.error(`Backend Error: ${data}`))
+      backendProcess.on('error', (err) => {
+        log.error('Error al intentar iniciar el proceso del backend:', err);
+      });
+    } catch (error) {
+      log.error("Error catastrófico al iniciar el backend:", error)
+    }
+  }
+
   const mainWindow = new BrowserWindow({
     width: 1366,
     height: 768,
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'), // Sigue siendo necesario para CUALQUIER API que expongas
-      sandbox: false, // Revisa si quieres mantenerlo en true por seguridad
-      contextIsolation: true,
-      nodeIntegration: false
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false
     }
   })
 
@@ -34,7 +55,6 @@ function createWindow() {
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-    //if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
@@ -43,8 +63,7 @@ function createWindow() {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.funglusapp.desktop')
   createWindow()
-
-  app.on('activate', function () {
+  app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
@@ -53,4 +72,13 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  if (backendProcess) {
+    log.info('Cerrando proceso del backend...');
+    backendProcess.kill()
+    backendProcess = null
+  }
+  log.info('Aplicación cerrada.');
 })
