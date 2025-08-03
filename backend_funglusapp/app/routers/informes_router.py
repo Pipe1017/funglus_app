@@ -18,15 +18,27 @@ router = APIRouter(
     summary="Obtener el resumen de resultados para un ciclo"
 )
 def get_resumen_ciclo(ciclo_id: int, db: Session = Depends(database.get_db)):
-    """
-    Genera y devuelve un informe de resumen para un ciclo específico.
-    
-    - Agrupa los datos por Etapa, Muestra y Origen.
-    - Si para una combinación hay múltiples secuencias, calcula el **promedio** de los resultados.
-    - Si solo hay una secuencia, muestra el **valor individual**.
-    """
+    # ... (esta función se mantiene igual)
     informe_data = crud_informes.get_informe_resumen_by_ciclo(db=db, ciclo_id=ciclo_id)
-    if not informe_data:
-        # Devolver una lista vacía es aceptable, no necesariamente un error 404.
-        return []
     return informe_data
+
+
+# --- ¡NUEVO ENDPOINT PARA EL GRÁFICO HISTÓRICO! ---
+@router.post(
+    "/historico",
+    response_model=informe_schemas.HistoricoResponse,
+    summary="Obtener datos históricos para comparar entre ciclos"
+)
+def get_datos_historicos(
+    request: informe_schemas.HistoricoRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    Recibe una métrica y una lista de combinaciones de catálogos,
+    y devuelve una serie de datos históricos a través de todos los ciclos
+    para ser graficada.
+    """
+    if len(request.combinaciones) > 4:
+         raise HTTPException(status_code=400, detail="Se permite un máximo de 4 combinaciones para comparar.")
+
+    return crud_informes.get_informe_historico(db=db, request=request)

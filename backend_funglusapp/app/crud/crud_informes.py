@@ -1,10 +1,11 @@
 # backend_funglusapp/app/crud/crud_informes.py
 from typing import List
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, cast, String
 
 from app.db import models
 from app.schemas import informe_schemas
+from app.crud import crud_catalogos
 
 def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_schemas.InformeResumenRow]:
     """
@@ -141,4 +142,63 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
         )
         informe_final.append(informe_row)
 
+
     return informe_final
+
+def get_informe_historico(db: Session, request: informe_schemas.HistoricoRequest) -> informe_schemas.HistoricoResponse:
+    """
+    Genera datos históricos reutilizando la lógica del informe de resumen para cada ciclo.
+    """
+    # 1. Obtener todos los ciclos ordenados por fecha
+    ciclos = db.query(models.Ciclo).order_by(models.Ciclo.fecha_inicio).all()
+    
+    # 2. Obtener los nombres de las etapas, muestras y origenes para la leyenda
+    series_nombres = []
+    combinaciones_con_nombres = []
+    for comb in request.combinaciones:
+        etapa = crud_catalogos.get_etapa_by_id(db, comb.etapa_id)
+        muestra = crud_catalogos.get_muestra_by_id(db, comb.muestra_id)
+        origen = crud_catalogos.get_origen_by_id(db, comb.origen_id)
+        
+        if etapa and muestra and origen:
+            nombre = f"{etapa.nombre}-{muestra.nombre}-{origen.nombre}"
+            series_nombres.append(nombre)
+            combinaciones_con_nombres.append({
+                "ids": comb,
+                "nombre_etapa": etapa.nombre,
+                "nombre_muestra": muestra.nombre,
+                "nombre_origen": origen.nombre
+            })
+
+    # 3. Recorrer cada ciclo para obtener los datos
+    data_para_grafico = []
+    for ciclo in ciclos:
+        # --- ¡LÓGICA CLAVE! Se reutiliza la función del informe de resumen ---
+        resumen_del_ciclo = get_informe_resumen_by_ciclo(db, ciclo.id)
+
+        punto_del_grafico = {
+            "ciclo_nombre": ciclo.nombre_ciclo,
+            "fecha_inicio": ciclo.fecha_inicio,
+            "resultados": {}
+        }
+
+        # Para cada combinación solicitada, buscarla en el resumen del ciclo actual
+        for i, comb_info in enumerate(combinaciones_con_nombres):
+            nombre_serie = series_nombres[i]
+            
+            valor_encontrado = None
+            # Buscar la fila en el resumen que coincida con la combinación
+            for fila_resumen in resumen_del_ciclo:
+                if (fila_resumen.etapa_nombre == comb_info["nombre_etapa"] and
+                    fila_resumen.muestra_nombre == comb_info["nombre_muestra"] and
+                    fila_resumen.origen_nombre == comb_info["nombre_origen"]):
+                    
+                    # Obtener el valor de la métrica solicitada (ej. "resultado_cenizas_porc")
+                    valor_encontrado = getattr(fila_resumen, request.metrica, None)
+                    break # Salir del bucle una vez encontrada la fila
+            
+            punto_del_grafico["resultados"][nombre_serie] = valor_encontrado
+
+        data_para_grafico.append(punto_del_grafico)
+
+    return informe_schemas.HistoricoResponse(data=data_para_grafico, series_nombres=series_nombres)
