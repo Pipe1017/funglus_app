@@ -24,10 +24,7 @@ dist/
 build/
 
 # Bases de datos
-*.db
-*.sqlite
-*.sqlite3
-db/
+
 
 # Docker
 .dockerignore
