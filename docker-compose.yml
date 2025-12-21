@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: funglusapp_db
+    environment:
+      POSTGRES_USER: funglusapp
+      POSTGRES_PASSWORD: funglusapp123
+      POSTGRES_DB: funglusapp
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - funglusapp_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U funglusapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: funglusapp_backend
+    environment:
+      - DATABASE_URL=postgresql://funglusapp:funglusapp123@db:5432/funglusapp
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - funglusapp_network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: funglusapp_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - funglusapp_network
+    restart: unless-stopped
+
+networks:
+  funglusapp_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

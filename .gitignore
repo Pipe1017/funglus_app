@@ -1,71 +1,62 @@
-# ===================================================================
-# Archivos de Entorno y Secretos (NUNCA SUBIR A GIT)
-# ===================================================================
-.env
-.env.*
-*.env
-
-# ===================================================================
-# Python / Backend (FastAPI)
-# ===================================================================
-# Entorno virtual
-venv/
-.venv/
-
-# Archivos compilados y caches de Python
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyc
+.venv/
+venv/
+env/
+ENV/
 
-# Archivos de build de PyInstaller
-/backend_funglusapp/build/
-/backend_funglusapp/dist/
-*.spec
-*.exe
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+.npm/
+dist/
+build/
 
-# ===================================================================
-# Node / Frontend (React, Vite, Electron)
-# ===================================================================
-# Dependencias
-/frontend_funglusapp/node_modules/
-
-# Archivos de build de Vite y Electron
-/frontend_funglusapp/dist/
-/frontend_funglusapp/out/
-
-# Logs y archivos de depuración
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# ===================================================================
-# Base de Datos
-# ===================================================================
+# Bases de datos
 *.db
 *.sqlite
 *.sqlite3
-*.db-journal*
+db/
 
-# ===================================================================
-# Archivos de Sistema Operativo y Editores de Código
-# ===================================================================
-# macOS
-.DS_Store
+# Docker
+.dockerignore
 
-# VSCode, JetBrains (IntelliJ, PyCharm), etc.
+# Variables de entorno (IMPORTANTE)
+.env
+.env.local
+.env.*.local
+
+# IDEs
 .vscode/
 .idea/
-*.iml
-
-# Archivos temporales
-*.log
 *.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Backups
+*.backup
 *.bak
 
-# ===================================================================
-# Docker (Tus reglas originales)
-# ===================================================================
-*.pid
-*.tar
-*.img
-*.lock
+# Archivos temporales
+tmp/
+temp/
