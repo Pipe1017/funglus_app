@@ -1,3 +1,8 @@
+#!/bin/bash
+
+echo "📝 Generando README.md completo..."
+
+cat > README.md << 'EOF'
 # 🍄 FunglusApp - Sistema de Gestión de Laboratorio
 
 Sistema completo de gestión y análisis de laboratorio para procesamiento de hongos comestibles.
@@ -550,3 +555,6 @@ Para problemas o preguntas:
 ---
 
 **¡Listo para usar! 🚀**
+EOF
+
+echo "✅ README.md creado exitosamente!"
