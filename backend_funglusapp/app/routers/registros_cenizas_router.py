@@ -7,6 +7,7 @@ from app.schemas import procesamiento_schemas as schemas_proc
 from app.schemas.catalogo_schemas import Msg  # Para mensajes de borrado
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from app.schemas.catalogo_schemas import Msg # 
 
 router = APIRouter(
     prefix="/registros-cenizas",  # Prefijo base para estos endpoints
@@ -150,3 +151,24 @@ def delete_existing_registro_cenizas(
             detail="Registro de análisis de cenizas no encontrado para borrar.",
         )
     return {"message": "Registro de análisis de cenizas borrado exitosamente."}
+
+# --- ¡NUEVO ENDPOINT DE ACCIÓN! ---
+@router.post(
+    "/acciones/resincronizar-lote/{ciclo_proc_id}",
+    response_model=Msg,
+    summary="Re-sincroniza los resultados de un lote con la tabla general"
+)
+def resincronizar_lote_cenizas(
+    ciclo_proc_id: int,
+    db: Session = Depends(database.get_db)
+):
+    """
+    Endpoint de utilidad para forzar la actualización de todos los resultados de
+    cenizas de un lote en la tabla DatosGeneralesLaboratorio.
+    """
+    updated_count = crud_procesamiento.resincronizar_cenizas_en_tabla_general(
+        db=db, ciclo_proc_id=ciclo_proc_id
+    )
+    return {
+        "message": f"{updated_count} registros de cenizas han sido re-sincronizados exitosamente."
+    }

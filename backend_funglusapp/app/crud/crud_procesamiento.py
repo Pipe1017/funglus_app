@@ -636,3 +636,43 @@ def delete_registro_cenizas(db: Session, registro_id: int) -> bool:
         db.rollback()
         print(f"Error al borrar RegistroAnalisisCenizas {registro_id}: {e}")
         return False
+
+# --- ¡NUEVA FUNCIÓN PARA RE-SINCRONIZAR CENIZAS! ---
+
+def resincronizar_cenizas_en_tabla_general(db: Session, ciclo_proc_id: int) -> int:
+    """
+    Recorre todos los registros de cenizas de un lote y re-sincroniza su resultado
+    en la tabla DatosGeneralesLaboratorio. Devuelve el número de registros actualizados.
+    """
+    # 1. Obtener todos los registros del lote de procesamiento
+    registros_del_lote = get_registros_cenizas_by_ciclo_procesamiento_id(
+        db, ciclo_proc_id=ciclo_proc_id, limit=1000,eager_load_catalogs=False
+    )
+
+    if not registros_del_lote:
+        return 0
+
+    updated_count = 0
+    for registro in registros_del_lote:
+        # 2. Construir las claves para la tabla general
+        keys_generales = schemas_datos.DatosGeneralesKeys(
+            ciclo_id=registro.ciclo_catalogo_id,
+            etapa_id=registro.etapa_catalogo_id,
+            muestra_id=registro.muestra_catalogo_id,
+            origen_id=registro.origen_catalogo_id,
+            secuencia_id=registro.secuencia_catalogo_id,
+        )
+        
+        # 3. Preparar el payload de actualización
+        update_payload = schemas_datos.DatosGeneralesUpdate(
+            resultado_cenizas_porc=registro.calc_cenizas_porc
+        )
+        
+        # 4. Llamar a la función de actualización
+        updated = crud_datos_generales.update_datos_generales_entry(
+            db, keys=keys_generales, data_update=update_payload
+        )
+        if updated:
+            updated_count += 1
+            
+    return updated_count

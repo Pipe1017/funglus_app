@@ -1,8 +1,7 @@
-// src/renderer/src/pages/laboratorio_main_sections/CenizasSection.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   FiClipboard, FiFilter, FiInfo, FiLayers, FiList,
-  FiPlusSquare, FiRefreshCw, FiSave, FiEdit, FiTrash2, FiXCircle
+  FiPlusSquare, FiRefreshCw, FiSave, FiEdit, FiTrash2, FiXCircle, FiCheckSquare
 } from 'react-icons/fi'
 import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm'
 
@@ -29,6 +28,7 @@ function CenizasSection() {
   const [isLoadingRegistros, setIsLoadingRegistros] = useState(false);
   const [errorLoadingRegistros, setErrorLoadingRegistros] = useState('');
   const [editingRecordId, setEditingRecordId] = useState(null);
+  const [resyncStatus, setResyncStatus] = useState({ isLoading: false, error: '', success: '' });
 
   const fetchCiclosProcesamientoCenizas = useCallback(async () => {
     setIsLoadingCiclosProc(true);
@@ -176,13 +176,32 @@ function CenizasSection() {
     }
   };
   
+  const handleResync = useCallback(async () => {
+    if (!selectedCicloProcesamientoId) return;
+    setResyncStatus({ isLoading: true, error: '', success: '' });
+    try {
+      const response = await fetch(`${REGISTROS_CENIZAS_ENDPOINT}/acciones/resincronizar-lote/${selectedCicloProcesamientoId}`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Error HTTP ${response.status}`);
+      }
+      const result = await response.json();
+      setResyncStatus({ isLoading: false, success: result.message, error: '' });
+    } catch (error) {
+      setResyncStatus({ isLoading: false, error: `Error: ${error.message}`, success: '' });
+    } finally {
+      setTimeout(() => setResyncStatus({ isLoading: false, error: '', success: '' }), 5000);
+    }
+  }, [selectedCicloProcesamientoId]);
+  
   const selectedCicloProcDetails = useMemo(() => ciclosProcesamientoCenizas.find(
       (cp) => cp.id === parseInt(selectedCicloProcesamientoId, 10)
     ), [ciclosProcesamientoCenizas, selectedCicloProcesamientoId]
   );
 
   const registrosTableColumns = useMemo(() => [
-    // --- ¡COLUMNA MODIFICADA! ---
     { Header: 'Ciclo Cat.', accessor: (row) => row.ciclo_catalogo_ref?.nombre_ciclo ?? 'N/A' },
     { Header: 'Etapa', accessor: (row) => row.etapa_catalogo_ref?.nombre ?? 'N/A' },
     { Header: 'Muestra', accessor: (row) => row.muestra_catalogo_ref?.nombre ?? 'N/A' },
@@ -346,25 +365,33 @@ function CenizasSection() {
         </div>
       )}
 
-      {/* --- ¡MENSAJE DE ACTUALIZACIÓN RESTAURADO! --- */}
-      {selectedCicloProcesamientoId && (
-        <div className="mt-8 p-4 bg-white rounded-lg shadow border">
+      {selectedCicloProcesamientoId && listaRegistrosCenizas.length > 0 && (
+        <div className="mt-8 p-4 bg-white rounded-lg shadow border border-gray-200">
           <h3 className="text-md font-semibold text-gray-700 mb-3 border-b pb-2">
-            <FiInfo className="inline mr-2 mb-1 text-blue-600" />
-            Actualización de Tabla General
+            <FiCheckSquare className="inline mr-2 mb-1 text-blue-600" />
+            4. Finalizar / Re-sincronizar Lote
           </h3>
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800 mb-4">
             <p className="flex items-start">
               <FiInfo size={20} className="mr-2 mt-0.5 text-blue-600 flex-shrink-0" />
               <span>
-                Cada vez que se guarda o actualiza un registro, el resultado de <strong>"Cenizas (%)"</strong> se refleja automáticamente en la Tabla General de Laboratorio para esa combinación de catálogos.
+                Aunque los resultados de cenizas se actualizan en la Tabla General automáticamente, puedes usar este botón para forzar una re-sincronización de **todos** los registros de este lote.
               </span>
             </p>
           </div>
+          <button
+            onClick={handleResync}
+            disabled={resyncStatus.isLoading}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-60 flex items-center"
+          >
+            <FiRefreshCw className={`mr-2 h-4 w-4 ${resyncStatus.isLoading ? 'animate-spin' : ''}`} />
+            {resyncStatus.isLoading ? 'Sincronizando...' : 'Re-sincronizar Lote con Tabla General'}
+          </button>
+          {resyncStatus.error && <p className="text-xs text-red-600 mt-2">{resyncStatus.error}</p>}
+          {resyncStatus.success && <p className="text-xs text-green-600 mt-2">{resyncStatus.success}</p>}
         </div>
       )}
 
-      {/* --- ¡ESTILOS RESTAURADOS! --- */}
       <style>{`
         .input-std {
           display: block;
