@@ -1,37 +1,49 @@
-// src/layouts/MainLayout.jsx
-import React from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-// Aseguramos que los iconos estén disponibles
-import { CiBeaker1, CiFileOn, CiGrid41, CiHome, CiRepeat, CiSettings } from 'react-icons/ci'
+// src/modules/core/layouts/MainLayout.jsx
+import React, { useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { 
+  CiBeaker1, 
+  CiHome, 
+  CiSettings,
+  CiGrid41,
+  CiFileOn,
+  CiRepeat,
+  CiMenuBurger
+} from 'react-icons/ci'
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
 function MainLayout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  
   const userName = localStorage.getItem('user_name') || 'Usuario'
+  const role = localStorage.getItem('role')
+
+  // Determinar en qué módulo estamos
+  const currentModule = location.pathname.split('/')[1] // laboratorio, siembra, incubacion, etc
 
   // Clases para los links del sidebar
   const commonLinkClasses =
     'flex items-center px-4 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors duration-150 text-sm'
-  const activeLinkClasses = 'bg-gray-900 text-white shadow-md border-l-4 border-brand-500' // Agregado un borde para resaltar
+  const activeLinkClasses = 'bg-gray-900 text-white shadow-md border-l-4 border-brand-500'
 
   const navLinkClass = (path) => {
-    // Lógica para determinar si el link está activo basado en la URL actual
-    const baseNavPath = path.split('/')[1]
-    const currentLocationBase = location.pathname.split('/')[1]
-    const isActive = baseNavPath === currentLocationBase
+    const isActive = location.pathname === path || location.pathname.startsWith(path + '/')
     return `${commonLinkClasses} ${isActive ? activeLinkClasses : ''}`
   }
 
-  // Generación de Breadcrumbs (Migas de pan)
+  // Generación de Breadcrumbs
   const pathnames = location.pathname.split('/').filter((x) => x)
   const breadcrumbs = pathnames.map((name, index) => {
     const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`
     const isLast = index === pathnames.length - 1
     
-    // Formateo de nombres para que se vean bien
     let displayName = name.charAt(0).toUpperCase() + name.slice(1).replace(/[-_]/g, ' ')
-    if (displayName === 'M p') displayName = 'Materia Prima'
     if (displayName === 'Gestion catalogos') displayName = 'Catálogos'
-    if (displayName === 'Gestion ciclos') displayName = 'Ciclos'
+    if (displayName === 'Gestion ciclos') displayName = 'Gestión de Ciclos'
+    if (displayName === 'Admin') displayName = 'Administración'
+    if (displayName === 'Users') displayName = 'Usuarios'
 
     return (
       <React.Fragment key={routeTo}>
@@ -47,74 +59,176 @@ function MainLayout() {
     )
   })
 
+  // Renderizar opciones del sidebar según el módulo actual
+  const renderSidebarOptions = () => {
+    if (currentModule === 'laboratorio') {
+      return (
+        <>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+            Laboratorio
+          </div>
+          <NavLink to="/gestion-ciclos" className={() => navLinkClass('/gestion-ciclos')}>
+            <CiRepeat className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Gestión de Ciclos'}
+          </NavLink>
+          <NavLink to="/formulacion" className={() => navLinkClass('/formulacion')}>
+            <CiGrid41 className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Formulación'}
+          </NavLink>
+          <NavLink to="/informes" className={() => navLinkClass('/informes')}>
+            <CiFileOn className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Informes'}
+          </NavLink>
+          <NavLink to="/gestion-catalogos" className={() => navLinkClass('/gestion-catalogos')}>
+            <CiSettings className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Catálogos'}
+          </NavLink>
+        </>
+      )
+    } else if (currentModule === 'siembra') {
+      return (
+        <>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+            {!sidebarCollapsed && 'Siembra'}
+          </div>
+          <div className="text-xs text-gray-500 px-4 py-2 italic">
+            {!sidebarCollapsed && 'Opciones disponibles próximamente'}
+          </div>
+        </>
+      )
+    } else if (currentModule === 'incubacion') {
+      return (
+        <>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+            {!sidebarCollapsed && 'Incubación'}
+          </div>
+          <div className="text-xs text-gray-500 px-4 py-2 italic">
+            {!sidebarCollapsed && 'Opciones disponibles próximamente'}
+          </div>
+        </>
+      )
+    }
+    return null
+  }
+
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 text-gray-100 flex flex-col flex-shrink-0 shadow-2xl z-20">
-        <div className="px-5 py-6 border-b border-gray-700 flex items-center space-x-3 bg-gray-900">
-          <div className="h-10 w-10 bg-brand-500 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/40">
-            F
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-white tracking-wide">FunglusApp</h1>
-            <p className="text-xs text-gray-400">Laboratorio</p>
-          </div>
+      <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-gray-800 text-gray-100 flex flex-col flex-shrink-0 shadow-2xl z-20 transition-all duration-300`}>
+        
+        {/* Header del Sidebar */}
+        <div className="px-5 py-6 border-b border-gray-700 flex items-center justify-between bg-gray-900">
+          {!sidebarCollapsed && (
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/Logo.png" 
+                alt="Funglus Logo" 
+                className="h-10 w-10 rounded-lg object-contain bg-white p-1"
+              />
+              <div>
+                <h1 className="text-lg font-bold text-white tracking-wide">FunglusApp</h1>
+                <p className="text-xs text-gray-400">Sistema Integral</p>
+              </div>
+            </div>
+          )}
+          {sidebarCollapsed && (
+            <img 
+              src="/Logo.png" 
+              alt="Funglus" 
+              className="h-10 w-10 rounded-lg object-contain bg-white p-1 mx-auto"
+            />
+          )}
         </div>
         
         <nav className="flex-grow px-3 py-6 space-y-2 overflow-y-auto">
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">Módulos</div>
           
-          <NavLink to="/laboratorio" className={() => navLinkClass('/laboratorio')}>
-            <CiBeaker1 className="mr-3 h-6 w-6 flex-shrink-0" /> Laboratorio
-          </NavLink>
-          <NavLink to="/gestion-ciclos" className={() => navLinkClass('/gestion-ciclos')}>
-            <CiRepeat className="mr-3 h-6 w-6 flex-shrink-0" /> Gestión de Ciclos
-          </NavLink>
-          <NavLink to="/formulacion" className={() => navLinkClass('/formulacion')}>
-            <CiGrid41 className="mr-3 h-6 w-6 flex-shrink-0" /> Formulación
-          </NavLink>
-          <NavLink to="/informes" className={() => navLinkClass('/informes')}>
-            <CiFileOn className="mr-3 h-6 w-6 flex-shrink-0" /> Informes
-          </NavLink>
+          {/* Botón Volver a Módulos */}
+          <button
+            onClick={() => navigate('/')}
+            className="w-full flex items-center px-4 py-3 text-gray-300 bg-brand-600 hover:bg-brand-700 rounded-md transition-colors duration-150 text-sm font-medium"
+          >
+            <CiHome className="h-6 w-6 flex-shrink-0 mr-3" />
+            {!sidebarCollapsed && 'Volver a Módulos'}
+          </button>
+
+          {/* Separador */}
+          <div className="border-t border-gray-700 my-4"></div>
+
+          {/* Opciones dinámicas según el módulo */}
+          {renderSidebarOptions()}
           
-          <div className="mt-8 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">Configuración</div>
-          
-          <NavLink to="/gestion-catalogos" className={() => navLinkClass('/gestion-catalogos')}>
-            <CiSettings className="mr-3 h-6 w-6 flex-shrink-0" /> Catálogos
-          </NavLink>
+          {/* Administración - Solo visible para admins */}
+          {role === 'admin' && (
+            <>
+              <div className="mt-8 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+                {!sidebarCollapsed && 'Configuración'}
+              </div>
+              <NavLink to="/admin/users" className={() => navLinkClass('/admin')}>
+                <CiSettings className="mr-3 h-6 w-6 flex-shrink-0" /> 
+                {!sidebarCollapsed && 'Administración'}
+              </NavLink>
+            </>
+          )}
         </nav>
         
+        {/* Footer del Sidebar */}
         <div className="p-4 border-t border-gray-700 bg-gray-900">
-           <div className="flex items-center">
+          {!sidebarCollapsed ? (
+            <div className="flex items-center">
               <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold">
                 {userName.charAt(0).toUpperCase()}
               </div>
               <div className="ml-3">
                 <p className="text-sm font-medium text-white">{userName}</p>
-                <p className="text-xs text-gray-500">Sesión Activa</p>
+                <p className="text-xs text-gray-500">
+                  {role === 'admin' ? 'Administrador' : role === 'operator' ? 'Operador' : 'Visor'}
+                </p>
               </div>
-           </div>
+            </div>
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold mx-auto">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
+
+        {/* Botón para colapsar/expandir - Al final del sidebar */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="w-full py-3 bg-gray-900 hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-300"
+          title={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+        >
+          {sidebarCollapsed ? (
+            <FiChevronRight size={20} />
+          ) : (
+            <>
+              <FiChevronLeft size={20} />
+              <span className="ml-2 text-xs">Colapsar</span>
+            </>
+          )}
+        </button>
       </aside>
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-background">
         <header className="bg-white shadow-sm py-3 px-6 border-b border-gray-200 flex items-center justify-between z-10">
           <div className="flex items-center">
-            {/* El botón Home ahora lleva al Launchpad ("/") */}
-            <NavLink 
-              to="/" 
-              className="text-gray-400 hover:text-brand-600 transition-colors p-1 rounded-md hover:bg-gray-100" 
+            <button
+              onClick={() => navigate('/')}
+              className="text-gray-400 hover:text-brand-600 transition-colors p-1 rounded-md hover:bg-gray-100"
               title="Volver al Launchpad"
             >
               <CiHome className="h-6 w-6" />
-            </NavLink>
+            </button>
             <div className="h-6 w-px bg-gray-300 mx-4"></div>
             <div className="flex items-center text-sm">{breadcrumbs}</div>
           </div>
           
-          <div className="text-xs text-gray-400 italic">
-             v0.2.0 Modular
+          <div className="flex items-center gap-4">
+            <img src="/Logo.png" alt="Funglus" className="h-6 object-contain" />
+            <div className="text-xs text-gray-400 italic">
+              v0.3.1 Admin
+            </div>
           </div>
         </header>
 

@@ -10,6 +10,7 @@ class Token(BaseModel):
     token_type: str
     role: str
     user_name: str
+    allowed_modules: List[str] = []
 
 
 class TokenData(BaseModel):

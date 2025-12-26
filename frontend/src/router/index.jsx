@@ -1,4 +1,4 @@
-// Ubicación: frontend/src/router/index.jsx
+// src/router/index.jsx
 import React from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
@@ -24,9 +24,45 @@ import InformesPage from '../modules/laboratorio/pages/InformesPage';
 // Admin Module
 import UsersPage from '../modules/admin/pages/UsersPage';
 
+// Otros Módulos (Placeholders)
+import SiembraPage from '../modules/siembra/pages/SiembraPage';
+import IncubacionPage from '../modules/incubacion/pages/IncubacionPage';
+
+// Protección de rutas privadas
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/login" replace />;
+  return children;
+};
+
+// Protección de rutas de admin
+const AdminRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  if (role !== 'admin') return <Navigate to="/" replace />;
+  
+  return children;
+};
+
+// Protección por módulos permitidos
+const ModuleRoute = ({ children, requiredModule }) => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+  const allowedModulesStr = localStorage.getItem('allowed_modules');
+  
+  if (!token) return <Navigate to="/login" replace />;
+  
+  // Admin tiene acceso a todo
+  if (role === 'admin') return children;
+  
+  // Verificar si el usuario tiene permiso para este módulo
+  const allowedModules = allowedModulesStr ? JSON.parse(allowedModulesStr) : [];
+  if (!allowedModules.includes(requiredModule)) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 };
 
@@ -50,9 +86,14 @@ const router = createBrowserRouter([
       </PrivateRoute>
     ),
     children: [
+      // Módulo Laboratorio
       {
         path: 'laboratorio',
-        element: <LaboratorioPage />,
+        element: (
+          <ModuleRoute requiredModule="laboratorio">
+            <LaboratorioPage />
+          </ModuleRoute>
+        ),
         children: [
           { index: true, element: <Navigate to="general" replace /> },
           { path: 'general', element: <LaboratorioGeneralSection /> },
@@ -60,16 +101,28 @@ const router = createBrowserRouter([
           { path: 'cenizas', element: <CenizasSection /> }
         ]
       },
-      // --- SECCIÓN ADMIN CORREGIDA ---
+      
+      // Módulo Siembra
       {
-        path: 'admin',
-        children: [
-          // Esta línea es la clave: redirige /admin -> /admin/users
-          { index: true, element: <Navigate to="users" replace /> },
-          { path: 'users', element: <UsersPage /> }
-        ]
+        path: 'siembra',
+        element: (
+          <ModuleRoute requiredModule="siembra">
+            <SiembraPage />
+          </ModuleRoute>
+        )
       },
-      // -------------------------------
+      
+      // Módulo Incubación
+      {
+        path: 'incubacion',
+        element: (
+          <ModuleRoute requiredModule="incubacion">
+            <IncubacionPage />
+          </ModuleRoute>
+        )
+      },
+      
+      // RUTAS INDEPENDIENTES (fuera de laboratorio)
       {
         path: 'gestion-ciclos',
         element: <GestionCiclosPage />
@@ -85,6 +138,16 @@ const router = createBrowserRouter([
       {
         path: 'gestion-catalogos',
         element: <GestionCatalogosPage />
+      },
+      
+      // Módulo de Administración (solo admin)
+      {
+        path: 'admin/users',
+        element: (
+          <AdminRoute>
+            <UsersPage />
+          </AdminRoute>
+        )
       }
     ]
   },

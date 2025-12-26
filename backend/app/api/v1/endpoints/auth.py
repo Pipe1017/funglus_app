@@ -53,5 +53,7 @@ def login_access_token(
         "access_token": access_token,
         "token_type": "bearer",
         "role": user.role,
-        "user_name": user.full_name or user.email
+        "user_name": user.full_name or user.email,
+        "email": user.email,
+        "allowed_modules": user.allowed_modules or []  # AGREGAR ESTO
     }
