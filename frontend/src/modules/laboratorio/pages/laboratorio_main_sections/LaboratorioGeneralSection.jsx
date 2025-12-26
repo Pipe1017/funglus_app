@@ -1,6 +1,7 @@
-// src/pages/laboratorio_main_sections/LaboratorioGeneralSection.jsx
+// Ubicación: frontend/src/modules/laboratorio/pages/laboratorio_main_sections/LaboratorioGeneralSection.jsx
 import React, { useState, useCallback } from 'react';
 import { FiEdit, FiFilter, FiDatabase, FiClipboard } from 'react-icons/fi';
+// Asegúrate de que estas rutas de importación sean correctas
 import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm';
 import MetadataForm from '../../components/laboratorio/general/MetadataForm';
 import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz';
@@ -36,57 +37,54 @@ function LaboratorioGeneralSection() {
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
       
-      {/* Encabezado de Sección */}
-      <div className="flex items-center space-x-3 mb-6 border-b border-gray-100 pb-4">
+      {/* Encabezado */}
+      <div className="flex items-center space-x-3 border-b border-gray-100 pb-4">
         <div className="p-2 bg-brand-50 rounded-lg text-brand-600">
             <FiClipboard size={24} />
         </div>
         <div>
             <h2 className="text-lg font-bold text-gray-800">Gestión de Datos Generales</h2>
-            <p className="text-sm text-gray-500">Seleccione un contexto para editar metadatos o visualizar la matriz completa.</p>
+            <p className="text-sm text-gray-500">Vista consolidada y edición de metadatos.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Columna Izquierda: Formularios (4 columnas en pantallas grandes) */}
-          <div className="lg:col-span-4 space-y-6">
-              
-              {/* Card 1: Selectores */}
-              <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
-                <h3 className="text-sm font-bold text-brand-900 uppercase tracking-wide mb-4 flex items-center">
-                  <FiFilter className="mr-2" /> Contexto
-                </h3>
-                <IdentificadoresSelectForm
-                  onConfirm={handleCatalogoKeysConfirm}
-                  onClear={handleCatalogoKeysClear}
-                  value={selectedCatalogoKeys}
-                  skipValidation={true}
-                />
-              </div>
+      {/* Contenedor Vertical Minimalista */}
+      <div className="flex flex-col space-y-6">
+          
+          {/* Bloque 1: Selección de Contexto */}
+          <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <FiFilter /> Contexto de Trabajo
+            </h3>
+            <IdentificadoresSelectForm
+              onConfirm={handleCatalogoKeysConfirm}
+              onClear={handleCatalogoKeysClear}
+              value={selectedCatalogoKeys}
+              skipValidation={true} // Permitimos seleccionar sin que exista registro previo para poder crearlo
+            />
+          </section>
 
-              {/* Card 2: Metadatos (Aparece al seleccionar) */}
-              {selectedCatalogoKeys && (
-                <div className="bg-brand-50/50 rounded-xl border border-brand-100 shadow-sm p-5 animate-in slide-in-from-left-2 duration-300">
-                  <h3 className="text-sm font-bold text-brand-900 uppercase tracking-wide mb-4 flex items-center">
-                    <FiEdit className="mr-2" /> Editar Metadatos
-                  </h3>
-                  <MetadataForm
-                    keysFromSection={selectedCatalogoKeys}
-                    key={selectedCatalogoKeys.id} 
-                  />
-                </div>
-              )}
-          </div>
+          {/* Bloque 2: Formulario de Metadatos (Solo visible si hay selección) */}
+          {selectedCatalogoKeys && (
+            <section className="bg-brand-50/30 rounded-xl border border-brand-200 p-5 shadow-sm border-l-4 border-l-brand-500 animate-in slide-in-from-top-4">
+              <h3 className="text-sm font-bold text-brand-800 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <FiEdit /> Editar Información General
+              </h3>
+              <MetadataForm
+                keysFromSection={selectedCatalogoKeys}
+                key={selectedCatalogoKeys.id || 'new'} 
+              />
+            </section>
+          )}
 
-          {/* Columna Derecha: Matriz de Datos (8 columnas) */}
-          <div className="lg:col-span-8">
-              <div className="bg-surface rounded-xl border border-gray-100 shadow-sm p-5 h-full">
-                <h3 className="text-sm font-bold text-brand-900 uppercase tracking-wide mb-4 flex items-center">
-                  <FiDatabase className="mr-2" /> Matriz de Datos Consolidados
-                </h3>
-                <ResumenMatriz onEditClick={handleEditFromMatriz} />
-              </div>
-          </div>
+          {/* Bloque 3: Matriz de Datos (Tabla Completa) */}
+          <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <FiDatabase /> Matriz de Datos Consolidados
+            </h3>
+            <ResumenMatriz onEditClick={handleEditFromMatriz} />
+          </section>
+
       </div>
     </div>
   );

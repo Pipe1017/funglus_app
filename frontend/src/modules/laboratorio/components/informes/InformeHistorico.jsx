@@ -1,16 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
-import { FiBarChart2, FiPlus, FiX, FiDownload } from 'react-icons/fi'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
-import { API_BASE_URL } from '../../../core/config/api'
+// Ubicación: frontend/src/modules/laboratorio/components/informes/InformeHistorico.jsx
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FiBarChart2, FiPlus, FiX, FiDownload, FiFilter } from 'react-icons/fi';
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+// CORRECCIÓN DE RUTA: 3 niveles atrás
+import { API_BASE_URL } from '../../../core/config/api';
 
+const FASTAPI_BASE_URL = API_BASE_URL;
+const lineColors = ["#6366f1", "#10b981", "#f59e0b", "#ef4444"];
 
-const FASTAPI_BASE_URL = API_BASE_URL
-const lineColors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"];
-
-function InformeHistorico() {
-  // --- Estados del Componente ---
+export default function InformeHistorico() {
   const [metricOptions] = useState([
     { key: 'resultado_humedad_prom_porc', label: 'Humedad (%)' },
     { key: 'resultado_cenizas_porc', label: 'Cenizas (%)' },
@@ -30,7 +30,6 @@ function InformeHistorico() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --- ¡NUEVO ESTADO Y REFERENCIA PARA EXPORTACIÓN! ---
   const [isExporting, setIsExporting] = useState(false);
   const exportableChartRef = useRef(null);
 
@@ -49,13 +48,11 @@ function InformeHistorico() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchAllCatalogs();
-  }, [fetchAllCatalogs]);
+  useEffect(() => { fetchAllCatalogs(); }, [fetchAllCatalogs]);
 
   const handleAddCombination = () => {
     if (combinations.length >= 4) {
-      setError('Puedes comparar un máximo de 4 combinaciones.');
+      setError('Máximo 4 combinaciones permitidas.');
       return;
     }
     if (currentSelection.etapa_id && currentSelection.muestra_id && currentSelection.origen_id) {
@@ -113,31 +110,24 @@ function InformeHistorico() {
     }
   }, [combinations, selectedMetric]);
 
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+  useEffect(() => { fetchChartData(); }, [fetchChartData]);
 
-  // --- ¡NUEVA FUNCIÓN DE EXPORTACIÓN! ---
   const handleExport = () => {
     if (!exportableChartRef.current) return;
     setIsExporting(true);
-
     html2canvas(exportableChartRef.current, { scale: 2, backgroundColor: '#ffffff' })
       .then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
-        
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
-        const ratio = Math.min((pdfWidth - 40) / canvasWidth, (pdfHeight - 40) / canvasHeight); // Deja un margen de 20pt
-        
+        const ratio = Math.min((pdfWidth - 40) / canvasWidth, (pdfHeight - 40) / canvasHeight);
         const finalWidth = canvasWidth * ratio;
         const finalHeight = canvasHeight * ratio;
         const x = (pdfWidth - finalWidth) / 2;
         const y = (pdfHeight - finalHeight) / 2;
-
         pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
         pdf.save('informe_historico.pdf');
       })
@@ -145,96 +135,117 @@ function InformeHistorico() {
   };
 
   return (
-    <div className="mt-8 p-4 bg-white rounded-lg shadow border">
-      <div className="flex justify-between items-center mb-3 border-b pb-2">
-        <h3 className="text-md font-semibold text-gray-700 flex items-center">
-          <FiBarChart2 className="inline mr-2 mb-1" />
-          Gráfico Histórico Comparativo entre Ciclos
-        </h3>
-        {/* --- ¡NUEVO BOTÓN DE EXPORTAR! --- */}
-        <button 
-          onClick={handleExport} 
-          disabled={isExporting || chartData.length === 0}
-          className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center"
-        >
-          <FiDownload className="mr-1.5" />
-          {isExporting ? 'Exportando...' : 'Exportar Gráfico'}
-        </button>
-      </div>
+    <div className="space-y-6">
       
-      <div className="space-y-4">
-        {/* Fila 1: Selectores */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-gray-700">1. Seleccione Métrica</label>
-            <select value={selectedMetric} onChange={e => setSelectedMetric(e.target.value)} className="mt-1 block w-full">
-              {metricOptions.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
-            </select>
-          </div>
-          <div className="md:col-span-3">
-            <label className="block text-xs font-medium text-gray-700">2. Arme una Combinación para Comparar</label>
-            <div className="flex items-center gap-2 mt-1">
-              <select value={currentSelection.etapa_id} onChange={e => setCurrentSelection(p => ({...p, etapa_id: e.target.value}))} className="w-full">
-                <option value="">-- Etapa --</option>
-                {etapaOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-              </select>
-              <select value={currentSelection.muestra_id} onChange={e => setCurrentSelection(p => ({...p, muestra_id: e.target.value}))} className="w-full">
-                <option value="">-- Muestra --</option>
-                {muestraOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-              </select>
-              <select value={currentSelection.origen_id} onChange={e => setCurrentSelection(p => ({...p, origen_id: e.target.value}))} className="w-full">
-                <option value="">-- Origen --</option>
-                {origenOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-              </select>
-              <button onClick={handleAddCombination} className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                <FiPlus />
-              </button>
+      {/* Panel de Configuración */}
+      <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 border-b border-gray-100 pb-3 gap-4">
+            <div>
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                    <FiFilter /> Configuración de Comparativa
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">Selecciona una métrica y agrega hasta 4 combinaciones para comparar.</p>
             </div>
-          </div>
-        </div>
+            <button 
+                onClick={handleExport} 
+                disabled={isExporting || chartData.length === 0}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+            >
+                <FiDownload /> {isExporting ? 'Exportando...' : 'Exportar Gráfico'}
+            </button>
+         </div>
 
-        {/* Fila 2: Combinaciones Seleccionadas */}
-        {combinations.length > 0 && (
-          <div>
-            <label className="block text-xs font-medium text-gray-700">3. Series a Graficar (Máx. 4)</label>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {combinations.map((comb, index) => (
-                <div key={index} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 text-sm">
-                  <span>{seriesNames[index] || 'Cargando...'}</span>
-                  <button onClick={() => handleRemoveCombination(index)} className="text-red-500 hover:text-red-700">
-                    <FiX size={14} />
-                  </button>
-                </div>
-              ))}
+        <div className="space-y-4">
+            {/* Paso 1: Métrica */}
+            <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">1. Variable a Comparar</label>
+                <select value={selectedMetric} onChange={e => setSelectedMetric(e.target.value)} className="w-full md:w-1/3 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-brand-500">
+                    {metricOptions.map(opt => <option key={opt.key} value={opt.key}>{opt.label}</option>)}
+                </select>
             </div>
-          </div>
-        )}
-        
-        {/* --- ¡NUEVO DIV CONTENEDOR CON LA REFERENCIA! --- */}
-        <div ref={exportableChartRef} className="mt-4 bg-white p-2">
-          {isLoading && <p className="text-center italic">Cargando gráfico...</p>}
-          {error && <p className="text-center text-red-600">{error}</p>}
-          {!isLoading && !error && combinations.length > 0 && chartData.length === 0 && (
-            <p className="text-center text-gray-500">No se encontraron datos históricos para las combinaciones seleccionadas.</p>
-          )}
-          {!isLoading && chartData.length > 0 && (
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="ciclo_nombre" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                {seriesNames.map((serie, index) => (
-                  <Line key={serie} type="monotone" dataKey={serie} name={serie} stroke={lineColors[index % lineColors.length]} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+
+            {/* Paso 2: Combinaciones */}
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">2. Agregar Serie de Datos</label>
+                <div className="flex flex-col md:flex-row gap-2">
+                    <select value={currentSelection.etapa_id} onChange={e => setCurrentSelection(p => ({...p, etapa_id: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">-- Etapa --</option>
+                        {etapaOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                    </select>
+                    <select value={currentSelection.muestra_id} onChange={e => setCurrentSelection(p => ({...p, muestra_id: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">-- Muestra --</option>
+                        {muestraOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                    </select>
+                    <select value={currentSelection.origen_id} onChange={e => setCurrentSelection(p => ({...p, origen_id: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">-- Origen --</option>
+                        {origenOptions.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                    </select>
+                    <button onClick={handleAddCombination} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
+                        <FiPlus size={18} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Paso 3: Tags Activos */}
+            {combinations.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {combinations.map((comb, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm rounded-full pl-3 pr-2 py-1 text-xs font-medium text-gray-700">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: lineColors[index % lineColors.length] }}></span>
+                            {seriesNames[index] || 'Cargando...'}
+                            <button onClick={() => handleRemoveCombination(index)} className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors">
+                                <FiX size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+            
+            {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
         </div>
-      </div>
+      </section>
+
+      {/* Área del Gráfico */}
+      <section ref={exportableChartRef} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm min-h-[400px]">
+          <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-6 text-center">
+             Tendencia Histórica: {metricOptions.find(m => m.key === selectedMetric)?.label}
+          </h3>
+          
+          {isLoading && <div className="h-64 flex items-center justify-center text-brand-600 animate-pulse">Cargando visualización...</div>}
+          
+          {!isLoading && !error && combinations.length > 0 && chartData.length === 0 && (
+             <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+                <FiBarChart2 size={32} className="mb-2 opacity-50" />
+                <p>No se encontraron datos históricos para esta combinación.</p>
+             </div>
+          )}
+
+          {!isLoading && chartData.length > 0 && (
+            <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                    <XAxis dataKey="ciclo_nombre" tick={{fontSize: 11, fill: '#6b7280'}} axisLine={{stroke: '#e5e7eb'}} tickLine={false} dy={10} />
+                    <YAxis tick={{fontSize: 11, fill: '#6b7280'}} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                    {seriesNames.map((serie, index) => (
+                    <Line 
+                        key={serie} 
+                        type="monotone" 
+                        dataKey={serie} 
+                        name={serie} 
+                        stroke={lineColors[index % lineColors.length]} 
+                        strokeWidth={3}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        dot={{ r: 3, strokeWidth: 0 }}
+                    />
+                    ))}
+                </LineChart>
+                </ResponsiveContainer>
+            </div>
+          )}
+      </section>
     </div>
   );
 }
-
-export default InformeHistorico;

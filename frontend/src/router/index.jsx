@@ -1,3 +1,4 @@
+// Ubicación: frontend/src/router/index.jsx
 import React from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
@@ -59,12 +60,16 @@ const router = createBrowserRouter([
           { path: 'cenizas', element: <CenizasSection /> }
         ]
       },
+      // --- SECCIÓN ADMIN CORREGIDA ---
       {
         path: 'admin',
         children: [
+          // Esta línea es la clave: redirige /admin -> /admin/users
+          { index: true, element: <Navigate to="users" replace /> },
           { path: 'users', element: <UsersPage /> }
         ]
       },
+      // -------------------------------
       {
         path: 'gestion-ciclos',
         element: <GestionCiclosPage />

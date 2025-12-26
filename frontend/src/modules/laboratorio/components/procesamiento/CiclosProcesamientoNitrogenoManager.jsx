@@ -1,16 +1,17 @@
-// src/renderer/src/components/procesamiento/CiclosProcesamientoNitrogenoManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-
   FiEdit,
   FiLoader,
   FiPlusCircle,
   FiRefreshCw,
   FiSave,
   FiTrash2,
-  FiXCircle
+  FiXCircle,
+  FiCalendar,
+  FiClock
 } from 'react-icons/fi'
 import { API_BASE_URL } from '../../../core/config/api'
+
 const FASTAPI_BASE_URL = API_BASE_URL
 const CICLOS_PROCESAMIENTO_ENDPOINT = `${FASTAPI_BASE_URL}/ciclos-procesamiento`
 const TIPO_ANALISIS_NITROGENO = 'nitrogeno'
@@ -18,7 +19,8 @@ const TIPO_ANALISIS_NITROGENO = 'nitrogeno'
 const initialFormState = {
   id: null,
   identificador_lote: '',
-  fecha_hora_lote: '', // Se manejará como string para input datetime-local
+  fecha: '', // Separamos fecha
+  hora: '',  // Separamos hora
   descripcion: ''
 }
 
@@ -44,7 +46,7 @@ function CiclosProcesamientoNitrogenoManager() {
     try {
       const response = await fetch(
         `${CICLOS_PROCESAMIENTO_ENDPOINT}/${TIPO_ANALISIS_NITROGENO}/?limit=1000`
-      ) // GET by tipo_analisis
+      )
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
@@ -73,22 +75,41 @@ function CiclosProcesamientoNitrogenoManager() {
     setIsEditing(false)
     setIsFormVisible(false)
     setError('')
-    // successMessage se limpiará con displayMessage
   }
 
   const handleAddNew = () => {
     resetForm()
+    // Establecer fecha y hora actuales por defecto al crear
+    const now = new Date()
+    // Formato YYYY-MM-DD
+    const fechaHoy = now.toLocaleDateString('en-CA') 
+    // Formato HH:mm
+    const horaActual = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    
+    setFormData(prev => ({
+        ...prev,
+        fecha: fechaHoy,
+        hora: horaActual
+    }))
     setIsFormVisible(true)
   }
 
   const handleEdit = (cicloProc) => {
+    let fechaLocal = ''
+    let horaLocal = ''
+
+    if (cicloProc.fecha_hora_lote) {
+        const dateObj = new Date(cicloProc.fecha_hora_lote)
+        // Extraemos fecha y hora locales correctamente
+        fechaLocal = dateObj.toLocaleDateString('en-CA') // YYYY-MM-DD
+        horaLocal = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    }
+
     setFormData({
       id: cicloProc.id,
       identificador_lote: cicloProc.identificador_lote || '',
-      // Formatear fecha_hora_lote para datetime-local input (YYYY-MM-DDTHH:mm)
-      fecha_hora_lote: cicloProc.fecha_hora_lote
-        ? new Date(cicloProc.fecha_hora_lote).toISOString().slice(0, 16)
-        : '',
+      fecha: fechaLocal,
+      hora: horaLocal,
       descripcion: cicloProc.descripcion || ''
     })
     setIsEditing(true)
@@ -104,7 +125,7 @@ function CiclosProcesamientoNitrogenoManager() {
     ) {
       return
     }
-    setIsSubmitting(true) // Usar isSubmitting para operaciones de modificación
+    setIsSubmitting(true) 
     setError('')
     try {
       const response = await fetch(`${CICLOS_PROCESAMIENTO_ENDPOINT}/${cicloProcId}/`, {
@@ -118,7 +139,7 @@ function CiclosProcesamientoNitrogenoManager() {
         setSuccessMessage,
         `Ciclo de procesamiento "${identificadorLote}" borrado exitosamente.`
       )
-      fetchCiclosProcesamiento() // Recargar lista
+      fetchCiclosProcesamiento()
     } catch (err) {
       console.error('Error deleting ciclo de procesamiento:', err)
       displayMessage(setError, `Error al borrar ciclo de procesamiento: ${err.message}`)
@@ -129,17 +150,20 @@ function CiclosProcesamientoNitrogenoManager() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.identificador_lote.trim() || !formData.fecha_hora_lote) {
-      setError('El Identificador del Lote y la Fecha y Hora son obligatorios.')
+    if (!formData.identificador_lote.trim() || !formData.fecha || !formData.hora) {
+      setError('El Identificador, la Fecha y la Hora son obligatorios.')
       return
     }
     setIsSubmitting(true)
     setError('')
 
+    // Combinar fecha y hora locales para crear el ISO string
+    const fechaHoraCombined = new Date(`${formData.fecha}T${formData.hora}`)
+    
     const payload = {
       identificador_lote: formData.identificador_lote.trim(),
-      fecha_hora_lote: new Date(formData.fecha_hora_lote).toISOString(), // Convertir a ISO string para el backend
-      tipo_analisis: TIPO_ANALISIS_NITROGENO, // Siempre nitrógeno para este manager
+      fecha_hora_lote: fechaHoraCombined.toISOString(), 
+      tipo_analisis: TIPO_ANALISIS_NITROGENO,
       descripcion: formData.descripcion.trim() || null
     }
 
@@ -151,7 +175,7 @@ function CiclosProcesamientoNitrogenoManager() {
         response = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload) // El payload para PUT no necesita tipo_analisis
+          body: JSON.stringify(payload)
         })
       } else {
         url += `/`
@@ -172,7 +196,7 @@ function CiclosProcesamientoNitrogenoManager() {
         `Ciclo de procesamiento ${isEditing ? 'actualizado' : 'creado'} exitosamente.`
       )
       resetForm()
-      fetchCiclosProcesamiento() // Recargar lista
+      fetchCiclosProcesamiento() 
     } catch (err) {
       console.error('Error saving ciclo de procesamiento:', err)
       displayMessage(setError, `Error al guardar ciclo de procesamiento: ${err.message}`)
@@ -184,17 +208,16 @@ function CiclosProcesamientoNitrogenoManager() {
   const formatDateTimeForDisplay = (isoString) => {
     if (!isoString) return '-'
     try {
-      // Formato deseado: DD/MM/YYYY HH:mm
       return new Date(isoString).toLocaleString('es-ES', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false
+        hour12: true
       })
     } catch (e) {
-      return isoString // Fallback si la fecha no es válida
+      return isoString 
     }
   }
 
@@ -219,6 +242,8 @@ function CiclosProcesamientoNitrogenoManager() {
             <h3 className="text-xl font-medium text-gray-800 border-b pb-2 mb-4">
               {isEditing ? 'Editar Ciclo de Procesamiento' : 'Crear Nuevo Ciclo de Procesamiento'}
             </h3>
+            
+            {/* Campo Identificador */}
             <div>
               <label
                 htmlFor="identificador_lote"
@@ -233,23 +258,43 @@ function CiclosProcesamientoNitrogenoManager() {
                 value={formData.identificador_lote}
                 onChange={handleInputChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Ej: LOTE-2023-A"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
-            <div>
-              <label htmlFor="fecha_hora_lote" className="block text-sm font-medium text-gray-700">
-                Fecha y Hora del Lote/Ciclo:
-              </label>
-              <input
-                type="datetime-local"
-                name="fecha_hora_lote"
-                id="fecha_hora_lote"
-                value={formData.fecha_hora_lote}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
+
+            {/* Campos Fecha y Hora SEPARADOS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="fecha" className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <FiCalendar /> Fecha del Lote:
+                    </label>
+                    <input
+                        type="date"
+                        name="fecha"
+                        id="fecha"
+                        value={formData.fecha}
+                        onChange={handleInputChange}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="hora" className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <FiClock /> Hora de Inicio:
+                    </label>
+                    <input
+                        type="time"
+                        name="hora"
+                        id="hora"
+                        value={formData.hora}
+                        onChange={handleInputChange}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                </div>
             </div>
+
             <div>
               <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">
                 Descripción (Opcional):
@@ -260,9 +305,10 @@ function CiclosProcesamientoNitrogenoManager() {
                 value={formData.descripcion}
                 onChange={handleInputChange}
                 rows="3"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>
+
             <div className="flex items-center gap-x-3 pt-3">
               <button
                 type="submit"

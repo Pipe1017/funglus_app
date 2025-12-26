@@ -1,24 +1,28 @@
 // src/renderer/src/components/procesamiento/CiclosProcesamientoCenizasManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 import {
-
   FiEdit,
   FiLoader,
   FiPlusCircle,
   FiRefreshCw,
   FiSave,
   FiTrash2,
-  FiXCircle
+  FiXCircle,
+  FiCalendar,
+  FiClock
 } from 'react-icons/fi'
 import { API_BASE_URL } from '../../../core/config/api'
+
 const FASTAPI_BASE_URL = API_BASE_URL
 const CICLOS_PROCESAMIENTO_ENDPOINT = `${FASTAPI_BASE_URL}/ciclos-procesamiento`
-const TIPO_ANALISIS_CENIZAS = 'cenizas' // <-- Cambio aquí
+const TIPO_ANALISIS_CENIZAS = 'cenizas'
 
+// Separamos fecha y hora en el estado inicial
 const initialFormState = {
   id: null,
   identificador_lote: '',
-  fecha_hora_lote: '',
+  fecha: '',
+  hora: '',
   descripcion: ''
 }
 
@@ -42,7 +46,6 @@ function CiclosProcesamientoCenizasManager() {
     setIsLoading(true)
     setError('')
     try {
-      // Usa TIPO_ANALISIS_CENIZAS para el endpoint
       const response = await fetch(
         `${CICLOS_PROCESAMIENTO_ENDPOINT}/${TIPO_ANALISIS_CENIZAS}/?limit=1000`
       )
@@ -58,7 +61,7 @@ function CiclosProcesamientoCenizasManager() {
     } finally {
       setIsLoading(false)
     }
-  }, []) // No hay dependencias ya que TIPO_ANALISIS_CENIZAS es constante aquí
+  }, [])
 
   useEffect(() => {
     fetchCiclosProcesamiento()
@@ -78,16 +81,34 @@ function CiclosProcesamientoCenizasManager() {
 
   const handleAddNew = () => {
     resetForm()
+    // Establecer fecha y hora actuales por defecto
+    const now = new Date()
+    const fechaHoy = now.toLocaleDateString('en-CA') // YYYY-MM-DD
+    const horaActual = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) // HH:mm
+    
+    setFormData(prev => ({
+        ...prev,
+        fecha: fechaHoy,
+        hora: horaActual
+    }))
     setIsFormVisible(true)
   }
 
   const handleEdit = (cicloProc) => {
+    let fechaLocal = ''
+    let horaLocal = ''
+
+    if (cicloProc.fecha_hora_lote) {
+        const dateObj = new Date(cicloProc.fecha_hora_lote)
+        fechaLocal = dateObj.toLocaleDateString('en-CA')
+        horaLocal = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    }
+
     setFormData({
       id: cicloProc.id,
       identificador_lote: cicloProc.identificador_lote || '',
-      fecha_hora_lote: cicloProc.fecha_hora_lote
-        ? new Date(cicloProc.fecha_hora_lote).toISOString().slice(0, 16)
-        : '',
+      fecha: fechaLocal,
+      hora: horaLocal,
       descripcion: cicloProc.descripcion || ''
     })
     setIsEditing(true)
@@ -98,7 +119,7 @@ function CiclosProcesamientoCenizasManager() {
   const handleDelete = async (cicloProcId, identificadorLote) => {
     if (
       !window.confirm(
-        `¿Estás seguro de que quieres borrar el ciclo de procesamiento de cenizas "${identificadorLote}" (ID: ${cicloProcId})? Esto borrará todos sus registros de análisis asociados.`
+        `¿Estás seguro de que quieres borrar el ciclo de cenizas "${identificadorLote}" (ID: ${cicloProcId})? Esto borrará todos sus registros asociados.`
       )
     ) {
       return
@@ -115,12 +136,12 @@ function CiclosProcesamientoCenizasManager() {
       }
       displayMessage(
         setSuccessMessage,
-        `Ciclo de procesamiento de cenizas "${identificadorLote}" borrado exitosamente.`
+        `Ciclo de cenizas "${identificadorLote}" borrado exitosamente.`
       )
       fetchCiclosProcesamiento()
     } catch (err) {
-      console.error('Error deleting ciclo de procesamiento de cenizas:', err)
-      displayMessage(setError, `Error al borrar ciclo de procesamiento de cenizas: ${err.message}`)
+      console.error('Error deleting ciclo de cenizas:', err)
+      displayMessage(setError, `Error al borrar ciclo: ${err.message}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -128,21 +149,24 @@ function CiclosProcesamientoCenizasManager() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.identificador_lote.trim() || !formData.fecha_hora_lote) {
-      setError('El Identificador del Lote y la Fecha y Hora son obligatorios.')
+    if (!formData.identificador_lote.trim() || !formData.fecha || !formData.hora) {
+      setError('El Identificador, la Fecha y la Hora son obligatorios.')
       return
     }
     setIsSubmitting(true)
     setError('')
 
+    // Combinamos fecha y hora para el backend
+    const fechaHoraCombined = new Date(`${formData.fecha}T${formData.hora}`)
+
     const payload = {
       identificador_lote: formData.identificador_lote.trim(),
-      fecha_hora_lote: new Date(formData.fecha_hora_lote).toISOString(),
-      tipo_analisis: TIPO_ANALISIS_CENIZAS, // <-- Se usa la constante para Cenizas
+      fecha_hora_lote: fechaHoraCombined.toISOString(),
+      tipo_analisis: TIPO_ANALISIS_CENIZAS,
       descripcion: formData.descripcion.trim() || null
     }
 
-    // El payload para PUT no necesita tipo_analisis si el backend no lo permite cambiar
+    // Payload para actualizar (sin tipo_analisis)
     const updatePayload = {
       identificador_lote: payload.identificador_lote,
       fecha_hora_lote: payload.fecha_hora_lote,
@@ -157,14 +181,14 @@ function CiclosProcesamientoCenizasManager() {
         response = await fetch(url, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatePayload) // Usar payload sin tipo_analisis para PUT
+          body: JSON.stringify(updatePayload)
         })
       } else {
         url += `/`
         response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload) // Payload completo para POST
+          body: JSON.stringify(payload)
         })
       }
 
@@ -175,13 +199,13 @@ function CiclosProcesamientoCenizasManager() {
 
       displayMessage(
         setSuccessMessage,
-        `Ciclo de procesamiento de cenizas ${isEditing ? 'actualizado' : 'creado'} exitosamente.`
+        `Ciclo de cenizas ${isEditing ? 'actualizado' : 'creado'} exitosamente.`
       )
       resetForm()
       fetchCiclosProcesamiento()
     } catch (err) {
-      console.error('Error saving ciclo de procesamiento de cenizas:', err)
-      displayMessage(setError, `Error al guardar ciclo de procesamiento de cenizas: ${err.message}`)
+      console.error('Error saving ciclo de cenizas:', err)
+      displayMessage(setError, `Error al guardar ciclo: ${err.message}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -196,7 +220,7 @@ function CiclosProcesamientoCenizasManager() {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false
+        hour12: true
       })
     } catch (e) {
       return isoString
@@ -211,7 +235,7 @@ function CiclosProcesamientoCenizasManager() {
         </h2>
         <button
           onClick={handleAddNew}
-          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center text-sm shadow-sm disabled:opacity-60" // Color cambiado para diferenciar
+          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 flex items-center text-sm shadow-sm disabled:opacity-60"
           disabled={isFormVisible || isLoading || isSubmitting}
         >
           <FiPlusCircle className="mr-2" /> Añadir Nuevo Ciclo de Cenizas
@@ -226,7 +250,7 @@ function CiclosProcesamientoCenizasManager() {
                 ? 'Editar Ciclo de Procesamiento de Cenizas'
                 : 'Crear Nuevo Ciclo de Procesamiento de Cenizas'}
             </h3>
-            {/* ... (Inputs del formulario: identificador_lote, fecha_hora_lote, descripcion - idénticos a los de Nitrógeno) ... */}
+            
             <div>
               <label
                 htmlFor="identificador_lote_cenizas"
@@ -237,30 +261,47 @@ function CiclosProcesamientoCenizasManager() {
               <input
                 type="text"
                 name="identificador_lote"
-                id="identificador_lote_cenizas" // ID único para el input
+                id="identificador_lote_cenizas"
                 value={formData.identificador_lote}
                 onChange={handleInputChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Ej: LOTE-CEN-001"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
               />
             </div>
-            <div>
-              <label
-                htmlFor="fecha_hora_lote_cenizas"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Fecha y Hora del Lote/Ciclo:
-              </label>
-              <input
-                type="datetime-local"
-                name="fecha_hora_lote"
-                id="fecha_hora_lote_cenizas" // ID único para el input
-                value={formData.fecha_hora_lote}
-                onChange={handleInputChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-              />
+
+            {/* Campos Fecha y Hora SEPARADOS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="fecha_cenizas" className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <FiCalendar /> Fecha del Lote:
+                    </label>
+                    <input
+                        type="date"
+                        name="fecha"
+                        id="fecha_cenizas"
+                        value={formData.fecha}
+                        onChange={handleInputChange}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="hora_cenizas" className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <FiClock /> Hora de Inicio:
+                    </label>
+                    <input
+                        type="time"
+                        name="hora"
+                        id="hora_cenizas"
+                        value={formData.hora}
+                        onChange={handleInputChange}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    />
+                </div>
             </div>
+
             <div>
               <label
                 htmlFor="descripcion_cenizas"
@@ -270,13 +311,14 @@ function CiclosProcesamientoCenizasManager() {
               </label>
               <textarea
                 name="descripcion"
-                id="descripcion_cenizas" // ID único para el input
+                id="descripcion_cenizas"
                 value={formData.descripcion}
                 onChange={handleInputChange}
                 rows="3"
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
               />
             </div>
+            
             <div className="flex items-center gap-x-3 pt-3">
               <button
                 type="submit"
@@ -288,7 +330,7 @@ function CiclosProcesamientoCenizasManager() {
                 ) : (
                   <FiSave className="mr-2" />
                 )}
-                {isEditing ? 'Actualizar Ciclo de Cenizas' : 'Guardar Ciclo de Cenizas'}
+                {isEditing ? 'Actualizar Ciclo' : 'Guardar Ciclo'}
               </button>
               <button
                 type="button"
@@ -320,7 +362,7 @@ function CiclosProcesamientoCenizasManager() {
           <button
             onClick={fetchCiclosProcesamiento}
             disabled={isLoading || isSubmitting}
-            className="p-2 text-gray-500 hover:text-orange-600 rounded-full hover:bg-gray-100" // Color hover cambiado
+            className="p-2 text-gray-500 hover:text-orange-600 rounded-full hover:bg-gray-100"
             title="Refrescar lista"
           >
             <FiRefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -374,7 +416,7 @@ function CiclosProcesamientoCenizasManager() {
                       <button
                         onClick={() => handleEdit(cicloProc)}
                         disabled={isSubmitting}
-                        className="text-orange-600 hover:text-orange-800 p-1.5 rounded-md hover:bg-orange-100" // Color cambiado
+                        className="text-orange-600 hover:text-orange-800 p-1.5 rounded-md hover:bg-orange-100"
                         title="Editar"
                       >
                         <FiEdit size={16} />
