@@ -1,41 +1,68 @@
 # backend/create_first_user.py
-from sqlalchemy.orm import Session
-from app.db import database, models
-from app.core.security import get_password_hash
+"""
+Script para crear el primer usuario administrador del sistema.
+Se ejecuta automáticamente al iniciar el contenedor Docker.
+"""
 
-def create_admin_user():
-    db = database.SessionLocal()
+import sys
+from app.db.database import SessionLocal
+from app.db import models
+from app.core import security
+
+
+def create_first_admin():
+    """
+    Crea un usuario administrador por defecto si no existe ninguno.
+    
+    Credenciales por defecto:
+    - Email: admin@funglus.com
+    - Password: Admin123!
+    - Rol: admin
+    """
+    db = SessionLocal()
+    
     try:
-        EMAIL_A_CREAR = "felip_1017@outlook.com"
+        # Verificar si ya existe algún usuario admin
+        existing_admin = db.query(models.User).filter(
+            models.User.role == "admin"
+        ).first()
         
-        # 1. Verificar si ya existe (Usando el MISMO email)
-        user = db.query(models.User).filter(models.User.email == EMAIL_A_CREAR).first()
-        if user:
-            print(f"INFO: El usuario {EMAIL_A_CREAR} ya existe. No se requiere acción.")
+        if existing_admin:
+            print("✅ Ya existe un usuario administrador en el sistema")
+            print(f"   Email: {existing_admin.email}")
             return
-
-        # 2. Crear nuevo usuario si no existe
+        
+        # Crear usuario administrador por defecto
         admin_user = models.User(
-            email=EMAIL_A_CREAR,
-            hashed_password=get_password_hash("admin123"), # <--- CONTRASEÑA
+            email="admin@funglus.com",
+            hashed_password=security.get_password_hash("Admin123!"),
             full_name="Administrador del Sistema",
             role="admin",
-            is_active=True
+            is_active=True,
+            allowed_modules=["laboratorio", "siembra", "incubacion", "admin"]
         )
         
         db.add(admin_user)
         db.commit()
         db.refresh(admin_user)
-        print("✅ Usuario Admin creado exitosamente:")
-        print(f"Email: {admin_user.email}")
-        print(f"Role: {admin_user.role}")
+        
+        print("=" * 60)
+        print("✅ USUARIO ADMINISTRADOR CREADO EXITOSAMENTE")
+        print("=" * 60)
+        print(f"   Email:    admin@funglus.com")
+        print(f"   Password: Admin123!")
+        print(f"   Rol:      admin")
+        print("=" * 60)
+        print("⚠️  IMPORTANTE: Cambia la contraseña después del primer login")
+        print("=" * 60)
         
     except Exception as e:
-        print(f"❌ Error creando usuario: {e}")
+        print(f"❌ Error al crear usuario administrador: {e}")
+        db.rollback()
+        sys.exit(1)
     finally:
         db.close()
 
+
 if __name__ == "__main__":
-    # Asegurarse que las tablas existan antes de insertar
-    models.Base.metadata.create_all(bind=database.engine)
-    create_admin_user()
+    create_first_admin()
