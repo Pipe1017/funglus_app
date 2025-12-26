@@ -3,7 +3,7 @@ import { FiBarChart2, FiPlus, FiX, FiDownload } from 'react-icons/fi'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
 const FASTAPI_BASE_URL = API_BASE_URL

@@ -3,7 +3,7 @@ import { FiAlertTriangle, FiLayers, FiRefreshCw, FiDownload } from 'react-icons/
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import html2canvas from 'html2canvas' // <-- ¡NUEVA IMPORTACIÓN!
 import jsPDF from 'jspdf' // <-- ¡NUEVA IMPORTACIÓN!
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
 const FASTAPI_BASE_URL = API_BASE_URL

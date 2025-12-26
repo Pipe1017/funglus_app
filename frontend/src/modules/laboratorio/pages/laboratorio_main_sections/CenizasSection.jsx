@@ -3,8 +3,8 @@ import {
   FiClipboard, FiFilter, FiInfo, FiLayers, FiList,
   FiPlusSquare, FiRefreshCw, FiSave, FiEdit, FiTrash2, FiXCircle, FiCheckSquare
 } from 'react-icons/fi'
-import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm'
-import { API_BASE_URL } from '../../config/api'
+import IdentificadoresSelectForm from '../../../laboratorio/components/laboratorio/general/IdentificadoresSelectForm'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
 const FASTAPI_BASE_URL = API_BASE_URL

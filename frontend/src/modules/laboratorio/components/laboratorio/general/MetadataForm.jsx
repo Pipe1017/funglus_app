@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiRefreshCw, FiSave, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
-import { allPossibleMetadataFields } from '../../../config/metadataFormFields'
-import { API_BASE_URL } from '../../../config/api'
+import { allPossibleMetadataFields } from '../../../../core/config/metadataFormFields'
+import { API_BASE_URL } from '../../../../core/config/api'
 
 const DATOS_LABORATORIO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/entry`
 

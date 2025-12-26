@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiCheckSquare, FiFilter, FiRefreshCw } from 'react-icons/fi'
-import { API_BASE_URL } from '../../../config/api'
+import { API_BASE_URL } from '../../../../core/config/api'
 
 
 const FASTAPI_BASE_URL = API_BASE_URL

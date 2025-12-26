@@ -1,51 +1,51 @@
-// src/renderer/src/components/catalogos/OrigenesManager.jsx
+// src/renderer/src/components/catalogos/EtapasManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
-const FASTAPI_BASE_URL = API_BASE_URL
+const FASTAPI_BASE_URL = API_BASE_URL // URL base de tu API
 
-const initialOrigenFormState = {
+const initialEtapaFormState = {
   id: null,
   nombre: '',
   descripcion: ''
 }
 
-function OrigenesManager() {
-  const [origenes, setOrigenes] = useState([])
+function EtapasManager() {
+  const [etapas, setEtapas] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   const [isFormVisible, setIsFormVisible] = useState(false)
-  const [formData, setFormData] = useState(initialOrigenFormState)
+  const [formData, setFormData] = useState(initialEtapaFormState)
   const [isEditing, setIsEditing] = useState(false)
 
-  const fetchOrigenes = useCallback(async () => {
+  const fetchEtapas = useCallback(async () => {
     setIsLoading(true)
     setError('')
     try {
-      console.log('OrigenesManager: Solicitando todos los origenes vía HTTP...')
-      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/?limit=1000`)
+      console.log('EtapasManager: Solicitando todas las etapas vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/?limit=1000`)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
       const data = await response.json()
-      console.log('OrigenesManager: Origenes recibidos:', data)
-      setOrigenes(data || [])
+      console.log('EtapasManager: Etapas recibidas:', data)
+      setEtapas(data || [])
     } catch (err) {
-      setError(`Error al cargar origenes: ${err.message}`)
-      console.error('Error fetching origenes:', err)
+      setError(`Error al cargar etapas: ${err.message}`)
+      console.error('Error fetching etapas:', err)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchOrigenes()
-  }, [fetchOrigenes])
+    fetchEtapas()
+  }, [fetchEtapas])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -53,7 +53,7 @@ function OrigenesManager() {
   }
 
   const resetForm = () => {
-    setFormData(initialOrigenFormState)
+    setFormData(initialEtapaFormState)
     setIsEditing(false)
     setIsFormVisible(false)
     setError('')
@@ -65,11 +65,11 @@ function OrigenesManager() {
     setIsFormVisible(true)
   }
 
-  const handleEdit = (origen) => {
+  const handleEdit = (etapa) => {
     setFormData({
-      id: origen.id,
-      nombre: origen.nombre || '',
-      descripcion: origen.descripcion || ''
+      id: etapa.id,
+      nombre: etapa.nombre || '',
+      descripcion: etapa.descripcion || ''
     })
     setIsEditing(true)
     setIsFormVisible(true)
@@ -77,28 +77,28 @@ function OrigenesManager() {
     setSuccessMessage('')
   }
 
-  const handleDelete = async (origenId, origenNombre) => {
+  const handleDelete = async (etapaId, etapaNombre) => {
     if (
       window.confirm(
-        `¿Estás seguro de que quieres borrar el origen "${origenNombre}" (ID: ${origenId})?`
+        `¿Estás seguro de que quieres borrar la etapa "${etapaNombre}" (ID: ${etapaId})?`
       )
     ) {
       setIsLoading(true)
       setError('')
       setSuccessMessage('')
       try {
-        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${origenId}`, {
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${etapaId}`, {
           method: 'DELETE'
         })
         if (!response.ok) {
           const errData = await response.json().catch(() => ({ detail: response.statusText }))
           throw new Error(errData.detail || `Error HTTP ${response.status}`)
         }
-        setSuccessMessage(`Origen "${origenNombre}" borrado exitosamente.`)
-        fetchOrigenes()
+        setSuccessMessage(`Etapa "${etapaNombre}" borrada exitosamente.`)
+        fetchEtapas()
       } catch (err) {
-        setError(`Error al borrar origen: ${err.message}`)
-        console.error('Error deleting origen:', err)
+        setError(`Error al borrar etapa: ${err.message}`)
+        console.error('Error deleting etapa:', err)
       } finally {
         setIsLoading(false)
         setTimeout(() => {
@@ -112,7 +112,7 @@ function OrigenesManager() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.nombre.trim()) {
-      setError('El nombre del origen es obligatorio.')
+      setError('El nombre de la etapa es obligatorio.')
       return
     }
     setIsLoading(true)
@@ -127,13 +127,13 @@ function OrigenesManager() {
     try {
       let response
       if (isEditing && formData.id) {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${formData.id}`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
       } else {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -146,13 +146,13 @@ function OrigenesManager() {
       }
 
       setSuccessMessage(
-        isEditing ? 'Origen actualizado exitosamente.' : 'Origen creado exitosamente.'
+        isEditing ? 'Etapa actualizada exitosamente.' : 'Etapa creada exitosamente.'
       )
       resetForm()
-      fetchOrigenes()
+      fetchEtapas()
     } catch (err) {
-      setError(`Error al guardar origen: ${err.message}`)
-      console.error('Error saving origen:', err)
+      setError(`Error al guardar etapa: ${err.message}`)
+      console.error('Error saving etapa:', err)
     } finally {
       setIsLoading(false)
       setTimeout(() => {
@@ -169,7 +169,7 @@ function OrigenesManager() {
         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
         disabled={isLoading || isFormVisible}
       >
-        <FiPlusCircle className="mr-2" /> Añadir Nuevo Origen
+        <FiPlusCircle className="mr-2" /> Añadir Nueva Etapa
       </button>
 
       {isFormVisible && (
@@ -178,16 +178,16 @@ function OrigenesManager() {
           className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
         >
           <h3 className="text-lg font-medium mb-2 text-gray-800">
-            {isEditing ? 'Editar Origen' : 'Crear Nuevo Origen'}
+            {isEditing ? 'Editar Etapa' : 'Crear Nueva Etapa'}
           </h3>
           <div>
-            <label htmlFor="origen_nombre_form" className="block text-sm font-medium text-gray-700">
-              Nombre del Origen:
+            <label htmlFor="etapa_nombre_form" className="block text-sm font-medium text-gray-700">
+              Nombre de la Etapa:
             </label>
             <input
               type="text"
               name="nombre"
-              id="origen_nombre_form"
+              id="etapa_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -196,14 +196,14 @@ function OrigenesManager() {
           </div>
           <div>
             <label
-              htmlFor="origen_descripcion_form"
+              htmlFor="etapa_descripcion_form"
               className="block text-sm font-medium text-gray-700"
             >
               Descripción (Opcional):
             </label>
             <textarea
               name="descripcion"
-              id="origen_descripcion_form"
+              id="etapa_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
               rows="3"
@@ -217,7 +217,7 @@ function OrigenesManager() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
             >
               <FiSave className="mr-2" />{' '}
-              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Origen' : 'Crear Origen'}
+              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Etapa' : 'Crear Etapa'}
             </button>
             <button
               type="button"
@@ -243,12 +243,12 @@ function OrigenesManager() {
       )}
 
       <div className="mt-6 overflow-x-auto">
-        <h3 className="text-lg font-medium mb-2 text-gray-700">Origenes Existentes</h3>
-        {isLoading && <p className="text-sm text-gray-500 italic">Cargando origenes...</p>}
-        {!isLoading && origenes.length === 0 && (
-          <p className="text-sm text-gray-500">No hay origenes creados todavía.</p>
+        <h3 className="text-lg font-medium mb-2 text-gray-700">Etapas Existentes</h3>
+        {isLoading && <p className="text-sm text-gray-500 italic">Cargando etapas...</p>}
+        {!isLoading && etapas.length === 0 && (
+          <p className="text-sm text-gray-500">No hay etapas creadas todavía.</p>
         )}
-        {!isLoading && origenes.length > 0 && (
+        {!isLoading && etapas.length > 0 && (
           <table className="min-w-full divide-y divide-gray-200 border shadow-sm rounded-lg">
             <thead className="bg-gray-50">
               <tr>
@@ -256,7 +256,7 @@ function OrigenesManager() {
                   ID
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Nombre Origen
+                  Nombre Etapa
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Descripción
@@ -267,28 +267,28 @@ function OrigenesManager() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {origenes.map((origen) => (
-                <tr key={origen.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{origen.id}</td>
+              {etapas.map((etapa) => (
+                <tr key={etapa.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{etapa.id}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {origen.nombre}
+                    {etapa.nombre}
                   </td>
                   <td
                     className="px-4 py-3 text-sm text-gray-500 max-w-md truncate"
-                    title={origen.descripcion}
+                    title={etapa.descripcion}
                   >
-                    {origen.descripcion || '-'}
+                    {etapa.descripcion || '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm space-x-2">
                     <button
-                      onClick={() => handleEdit(origen)}
+                      onClick={() => handleEdit(etapa)}
                       className="text-indigo-600 hover:text-indigo-900 p-1"
                       title="Editar"
                     >
                       <FiEdit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(origen.id, origen.nombre)}
+                      onClick={() => handleDelete(etapa.id, etapa.nombre)}
                       className="text-red-600 hover:text-red-900 p-1"
                       title="Borrar"
                     >
@@ -304,4 +304,4 @@ function OrigenesManager() {
     </div>
   )
 }
-export default OrigenesManager
+export default EtapasManager

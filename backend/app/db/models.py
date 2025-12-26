@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Boolean,
+    JSON,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -392,4 +393,5 @@ class User(Base):
     full_name = Column(String, nullable=True)
     role = Column(String, default="operator")  # 'admin', 'operator', 'viewer'
     is_active = Column(Boolean, default=True)
+    allowed_modules = Column(JSON, default=["laboratorio"])  # NUEVO CAMPO
     created_at = Column(DateTime, server_default=func.now())

@@ -9,7 +9,7 @@ import {
   FiTrash2,
   FiXCircle
 } from 'react-icons/fi'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 const FASTAPI_BASE_URL = API_BASE_URL
 const CICLOS_ENDPOINT = `${FASTAPI_BASE_URL}/catalogos/ciclos`

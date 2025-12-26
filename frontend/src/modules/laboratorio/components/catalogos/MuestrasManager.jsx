@@ -1,51 +1,51 @@
-// src/renderer/src/components/catalogos/EtapasManager.jsx
+// src/renderer/src/components/catalogos/MuestrasManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
 const FASTAPI_BASE_URL = API_BASE_URL // URL base de tu API
 
-const initialEtapaFormState = {
+const initialMuestraFormState = {
   id: null,
   nombre: '',
   descripcion: ''
 }
 
-function EtapasManager() {
-  const [etapas, setEtapas] = useState([])
+function MuestrasManager() {
+  const [muestras, setMuestras] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   const [isFormVisible, setIsFormVisible] = useState(false)
-  const [formData, setFormData] = useState(initialEtapaFormState)
+  const [formData, setFormData] = useState(initialMuestraFormState)
   const [isEditing, setIsEditing] = useState(false)
 
-  const fetchEtapas = useCallback(async () => {
+  const fetchMuestras = useCallback(async () => {
     setIsLoading(true)
     setError('')
     try {
-      console.log('EtapasManager: Solicitando todas las etapas vía HTTP...')
-      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/?limit=1000`)
+      console.log('MuestrasManager: Solicitando todas las muestras vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/?limit=1000`)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
       const data = await response.json()
-      console.log('EtapasManager: Etapas recibidas:', data)
-      setEtapas(data || [])
+      console.log('MuestrasManager: Muestras recibidas:', data)
+      setMuestras(data || [])
     } catch (err) {
-      setError(`Error al cargar etapas: ${err.message}`)
-      console.error('Error fetching etapas:', err)
+      setError(`Error al cargar muestras: ${err.message}`)
+      console.error('Error fetching muestras:', err)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchEtapas()
-  }, [fetchEtapas])
+    fetchMuestras()
+  }, [fetchMuestras])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -53,7 +53,7 @@ function EtapasManager() {
   }
 
   const resetForm = () => {
-    setFormData(initialEtapaFormState)
+    setFormData(initialMuestraFormState)
     setIsEditing(false)
     setIsFormVisible(false)
     setError('')
@@ -65,11 +65,11 @@ function EtapasManager() {
     setIsFormVisible(true)
   }
 
-  const handleEdit = (etapa) => {
+  const handleEdit = (muestra) => {
     setFormData({
-      id: etapa.id,
-      nombre: etapa.nombre || '',
-      descripcion: etapa.descripcion || ''
+      id: muestra.id,
+      nombre: muestra.nombre || '',
+      descripcion: muestra.descripcion || ''
     })
     setIsEditing(true)
     setIsFormVisible(true)
@@ -77,28 +77,28 @@ function EtapasManager() {
     setSuccessMessage('')
   }
 
-  const handleDelete = async (etapaId, etapaNombre) => {
+  const handleDelete = async (muestraId, muestraNombre) => {
     if (
       window.confirm(
-        `¿Estás seguro de que quieres borrar la etapa "${etapaNombre}" (ID: ${etapaId})?`
+        `¿Estás seguro de que quieres borrar la muestra "${muestraNombre}" (ID: ${muestraId})?`
       )
     ) {
       setIsLoading(true)
       setError('')
       setSuccessMessage('')
       try {
-        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${etapaId}`, {
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${muestraId}`, {
           method: 'DELETE'
         })
         if (!response.ok) {
           const errData = await response.json().catch(() => ({ detail: response.statusText }))
           throw new Error(errData.detail || `Error HTTP ${response.status}`)
         }
-        setSuccessMessage(`Etapa "${etapaNombre}" borrada exitosamente.`)
-        fetchEtapas()
+        setSuccessMessage(`Muestra "${muestraNombre}" borrada exitosamente.`)
+        fetchMuestras()
       } catch (err) {
-        setError(`Error al borrar etapa: ${err.message}`)
-        console.error('Error deleting etapa:', err)
+        setError(`Error al borrar muestra: ${err.message}`)
+        console.error('Error deleting muestra:', err)
       } finally {
         setIsLoading(false)
         setTimeout(() => {
@@ -112,7 +112,7 @@ function EtapasManager() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.nombre.trim()) {
-      setError('El nombre de la etapa es obligatorio.')
+      setError('El nombre de la muestra es obligatorio.')
       return
     }
     setIsLoading(true)
@@ -127,13 +127,13 @@ function EtapasManager() {
     try {
       let response
       if (isEditing && formData.id) {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/${formData.id}`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
       } else {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/etapas/`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -146,13 +146,13 @@ function EtapasManager() {
       }
 
       setSuccessMessage(
-        isEditing ? 'Etapa actualizada exitosamente.' : 'Etapa creada exitosamente.'
+        isEditing ? 'Muestra actualizada exitosamente.' : 'Muestra creada exitosamente.'
       )
       resetForm()
-      fetchEtapas()
+      fetchMuestras()
     } catch (err) {
-      setError(`Error al guardar etapa: ${err.message}`)
-      console.error('Error saving etapa:', err)
+      setError(`Error al guardar muestra: ${err.message}`)
+      console.error('Error saving muestra:', err)
     } finally {
       setIsLoading(false)
       setTimeout(() => {
@@ -169,7 +169,7 @@ function EtapasManager() {
         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
         disabled={isLoading || isFormVisible}
       >
-        <FiPlusCircle className="mr-2" /> Añadir Nueva Etapa
+        <FiPlusCircle className="mr-2" /> Añadir Nueva Muestra
       </button>
 
       {isFormVisible && (
@@ -178,16 +178,19 @@ function EtapasManager() {
           className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
         >
           <h3 className="text-lg font-medium mb-2 text-gray-800">
-            {isEditing ? 'Editar Etapa' : 'Crear Nueva Etapa'}
+            {isEditing ? 'Editar Muestra' : 'Crear Nueva Muestra'}
           </h3>
           <div>
-            <label htmlFor="etapa_nombre_form" className="block text-sm font-medium text-gray-700">
-              Nombre de la Etapa:
+            <label
+              htmlFor="muestra_nombre_form"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Nombre de la Muestra:
             </label>
             <input
               type="text"
               name="nombre"
-              id="etapa_nombre_form"
+              id="muestra_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -196,14 +199,14 @@ function EtapasManager() {
           </div>
           <div>
             <label
-              htmlFor="etapa_descripcion_form"
+              htmlFor="muestra_descripcion_form"
               className="block text-sm font-medium text-gray-700"
             >
               Descripción (Opcional):
             </label>
             <textarea
               name="descripcion"
-              id="etapa_descripcion_form"
+              id="muestra_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
               rows="3"
@@ -217,7 +220,7 @@ function EtapasManager() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
             >
               <FiSave className="mr-2" />{' '}
-              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Etapa' : 'Crear Etapa'}
+              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Muestra' : 'Crear Muestra'}
             </button>
             <button
               type="button"
@@ -243,12 +246,12 @@ function EtapasManager() {
       )}
 
       <div className="mt-6 overflow-x-auto">
-        <h3 className="text-lg font-medium mb-2 text-gray-700">Etapas Existentes</h3>
-        {isLoading && <p className="text-sm text-gray-500 italic">Cargando etapas...</p>}
-        {!isLoading && etapas.length === 0 && (
-          <p className="text-sm text-gray-500">No hay etapas creadas todavía.</p>
+        <h3 className="text-lg font-medium mb-2 text-gray-700">Muestras Existentes</h3>
+        {isLoading && <p className="text-sm text-gray-500 italic">Cargando muestras...</p>}
+        {!isLoading && muestras.length === 0 && (
+          <p className="text-sm text-gray-500">No hay muestras creadas todavía.</p>
         )}
-        {!isLoading && etapas.length > 0 && (
+        {!isLoading && muestras.length > 0 && (
           <table className="min-w-full divide-y divide-gray-200 border shadow-sm rounded-lg">
             <thead className="bg-gray-50">
               <tr>
@@ -256,7 +259,7 @@ function EtapasManager() {
                   ID
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Nombre Etapa
+                  Nombre Muestra
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Descripción
@@ -267,28 +270,30 @@ function EtapasManager() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {etapas.map((etapa) => (
-                <tr key={etapa.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{etapa.id}</td>
+              {muestras.map((muestra) => (
+                <tr key={muestra.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                    {muestra.id}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {etapa.nombre}
+                    {muestra.nombre}
                   </td>
                   <td
                     className="px-4 py-3 text-sm text-gray-500 max-w-md truncate"
-                    title={etapa.descripcion}
+                    title={muestra.descripcion}
                   >
-                    {etapa.descripcion || '-'}
+                    {muestra.descripcion || '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm space-x-2">
                     <button
-                      onClick={() => handleEdit(etapa)}
+                      onClick={() => handleEdit(muestra)}
                       className="text-indigo-600 hover:text-indigo-900 p-1"
                       title="Editar"
                     >
                       <FiEdit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(etapa.id, etapa.nombre)}
+                      onClick={() => handleDelete(muestra.id, muestra.nombre)}
                       className="text-red-600 hover:text-red-900 p-1"
                       title="Borrar"
                     >
@@ -304,4 +309,4 @@ function EtapasManager() {
     </div>
   )
 }
-export default EtapasManager
+export default MuestrasManager

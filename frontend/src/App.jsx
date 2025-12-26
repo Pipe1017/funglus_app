@@ -1,5 +1,5 @@
 import React from 'react'
-import { CicloProvider } from './contexts/CicloContext'
+import { CicloProvider } from './modules/core/contexts/CicloContext'
 import { AppRouter } from './router'
 
 function App() {

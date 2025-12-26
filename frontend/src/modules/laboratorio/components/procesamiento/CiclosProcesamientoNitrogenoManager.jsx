@@ -10,7 +10,7 @@ import {
   FiTrash2,
   FiXCircle
 } from 'react-icons/fi'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 const FASTAPI_BASE_URL = API_BASE_URL
 const CICLOS_PROCESAMIENTO_ENDPOINT = `${FASTAPI_BASE_URL}/ciclos-procesamiento`
 const TIPO_ANALISIS_NITROGENO = 'nitrogeno'

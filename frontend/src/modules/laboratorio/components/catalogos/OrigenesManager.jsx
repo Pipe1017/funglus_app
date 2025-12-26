@@ -1,51 +1,51 @@
-// src/renderer/src/components/catalogos/MuestrasManager.jsx
+// src/renderer/src/components/catalogos/OrigenesManager.jsx
 import React, { useCallback, useEffect, useState } from 'react'
 import { FiEdit, FiPlusCircle, FiSave, FiTrash2, FiXCircle } from 'react-icons/fi'
-import { API_BASE_URL } from '../../config/api'
+import { API_BASE_URL } from '../../../core/config/api'
 
 
-const FASTAPI_BASE_URL = API_BASE_URL // URL base de tu API
+const FASTAPI_BASE_URL = API_BASE_URL
 
-const initialMuestraFormState = {
+const initialOrigenFormState = {
   id: null,
   nombre: '',
   descripcion: ''
 }
 
-function MuestrasManager() {
-  const [muestras, setMuestras] = useState([])
+function OrigenesManager() {
+  const [origenes, setOrigenes] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   const [isFormVisible, setIsFormVisible] = useState(false)
-  const [formData, setFormData] = useState(initialMuestraFormState)
+  const [formData, setFormData] = useState(initialOrigenFormState)
   const [isEditing, setIsEditing] = useState(false)
 
-  const fetchMuestras = useCallback(async () => {
+  const fetchOrigenes = useCallback(async () => {
     setIsLoading(true)
     setError('')
     try {
-      console.log('MuestrasManager: Solicitando todas las muestras vía HTTP...')
-      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/?limit=1000`)
+      console.log('OrigenesManager: Solicitando todos los origenes vía HTTP...')
+      const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/?limit=1000`)
       if (!response.ok) {
         const errData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errData.detail || `Error HTTP ${response.status}`)
       }
       const data = await response.json()
-      console.log('MuestrasManager: Muestras recibidas:', data)
-      setMuestras(data || [])
+      console.log('OrigenesManager: Origenes recibidos:', data)
+      setOrigenes(data || [])
     } catch (err) {
-      setError(`Error al cargar muestras: ${err.message}`)
-      console.error('Error fetching muestras:', err)
+      setError(`Error al cargar origenes: ${err.message}`)
+      console.error('Error fetching origenes:', err)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchMuestras()
-  }, [fetchMuestras])
+    fetchOrigenes()
+  }, [fetchOrigenes])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -53,7 +53,7 @@ function MuestrasManager() {
   }
 
   const resetForm = () => {
-    setFormData(initialMuestraFormState)
+    setFormData(initialOrigenFormState)
     setIsEditing(false)
     setIsFormVisible(false)
     setError('')
@@ -65,11 +65,11 @@ function MuestrasManager() {
     setIsFormVisible(true)
   }
 
-  const handleEdit = (muestra) => {
+  const handleEdit = (origen) => {
     setFormData({
-      id: muestra.id,
-      nombre: muestra.nombre || '',
-      descripcion: muestra.descripcion || ''
+      id: origen.id,
+      nombre: origen.nombre || '',
+      descripcion: origen.descripcion || ''
     })
     setIsEditing(true)
     setIsFormVisible(true)
@@ -77,28 +77,28 @@ function MuestrasManager() {
     setSuccessMessage('')
   }
 
-  const handleDelete = async (muestraId, muestraNombre) => {
+  const handleDelete = async (origenId, origenNombre) => {
     if (
       window.confirm(
-        `¿Estás seguro de que quieres borrar la muestra "${muestraNombre}" (ID: ${muestraId})?`
+        `¿Estás seguro de que quieres borrar el origen "${origenNombre}" (ID: ${origenId})?`
       )
     ) {
       setIsLoading(true)
       setError('')
       setSuccessMessage('')
       try {
-        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${muestraId}`, {
+        const response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${origenId}`, {
           method: 'DELETE'
         })
         if (!response.ok) {
           const errData = await response.json().catch(() => ({ detail: response.statusText }))
           throw new Error(errData.detail || `Error HTTP ${response.status}`)
         }
-        setSuccessMessage(`Muestra "${muestraNombre}" borrada exitosamente.`)
-        fetchMuestras()
+        setSuccessMessage(`Origen "${origenNombre}" borrado exitosamente.`)
+        fetchOrigenes()
       } catch (err) {
-        setError(`Error al borrar muestra: ${err.message}`)
-        console.error('Error deleting muestra:', err)
+        setError(`Error al borrar origen: ${err.message}`)
+        console.error('Error deleting origen:', err)
       } finally {
         setIsLoading(false)
         setTimeout(() => {
@@ -112,7 +112,7 @@ function MuestrasManager() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.nombre.trim()) {
-      setError('El nombre de la muestra es obligatorio.')
+      setError('El nombre del origen es obligatorio.')
       return
     }
     setIsLoading(true)
@@ -127,13 +127,13 @@ function MuestrasManager() {
     try {
       let response
       if (isEditing && formData.id) {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/${formData.id}`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/${formData.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
       } else {
-        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/muestras/`, {
+        response = await fetch(`${FASTAPI_BASE_URL}/catalogos/origenes/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -146,13 +146,13 @@ function MuestrasManager() {
       }
 
       setSuccessMessage(
-        isEditing ? 'Muestra actualizada exitosamente.' : 'Muestra creada exitosamente.'
+        isEditing ? 'Origen actualizado exitosamente.' : 'Origen creado exitosamente.'
       )
       resetForm()
-      fetchMuestras()
+      fetchOrigenes()
     } catch (err) {
-      setError(`Error al guardar muestra: ${err.message}`)
-      console.error('Error saving muestra:', err)
+      setError(`Error al guardar origen: ${err.message}`)
+      console.error('Error saving origen:', err)
     } finally {
       setIsLoading(false)
       setTimeout(() => {
@@ -169,7 +169,7 @@ function MuestrasManager() {
         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center text-sm"
         disabled={isLoading || isFormVisible}
       >
-        <FiPlusCircle className="mr-2" /> Añadir Nueva Muestra
+        <FiPlusCircle className="mr-2" /> Añadir Nuevo Origen
       </button>
 
       {isFormVisible && (
@@ -178,19 +178,16 @@ function MuestrasManager() {
           className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3 shadow"
         >
           <h3 className="text-lg font-medium mb-2 text-gray-800">
-            {isEditing ? 'Editar Muestra' : 'Crear Nueva Muestra'}
+            {isEditing ? 'Editar Origen' : 'Crear Nuevo Origen'}
           </h3>
           <div>
-            <label
-              htmlFor="muestra_nombre_form"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Nombre de la Muestra:
+            <label htmlFor="origen_nombre_form" className="block text-sm font-medium text-gray-700">
+              Nombre del Origen:
             </label>
             <input
               type="text"
               name="nombre"
-              id="muestra_nombre_form"
+              id="origen_nombre_form"
               value={formData.nombre}
               onChange={handleInputChange}
               required
@@ -199,14 +196,14 @@ function MuestrasManager() {
           </div>
           <div>
             <label
-              htmlFor="muestra_descripcion_form"
+              htmlFor="origen_descripcion_form"
               className="block text-sm font-medium text-gray-700"
             >
               Descripción (Opcional):
             </label>
             <textarea
               name="descripcion"
-              id="muestra_descripcion_form"
+              id="origen_descripcion_form"
               value={formData.descripcion}
               onChange={handleInputChange}
               rows="3"
@@ -220,7 +217,7 @@ function MuestrasManager() {
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm"
             >
               <FiSave className="mr-2" />{' '}
-              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Muestra' : 'Crear Muestra'}
+              {isLoading ? 'Guardando...' : isEditing ? 'Actualizar Origen' : 'Crear Origen'}
             </button>
             <button
               type="button"
@@ -246,12 +243,12 @@ function MuestrasManager() {
       )}
 
       <div className="mt-6 overflow-x-auto">
-        <h3 className="text-lg font-medium mb-2 text-gray-700">Muestras Existentes</h3>
-        {isLoading && <p className="text-sm text-gray-500 italic">Cargando muestras...</p>}
-        {!isLoading && muestras.length === 0 && (
-          <p className="text-sm text-gray-500">No hay muestras creadas todavía.</p>
+        <h3 className="text-lg font-medium mb-2 text-gray-700">Origenes Existentes</h3>
+        {isLoading && <p className="text-sm text-gray-500 italic">Cargando origenes...</p>}
+        {!isLoading && origenes.length === 0 && (
+          <p className="text-sm text-gray-500">No hay origenes creados todavía.</p>
         )}
-        {!isLoading && muestras.length > 0 && (
+        {!isLoading && origenes.length > 0 && (
           <table className="min-w-full divide-y divide-gray-200 border shadow-sm rounded-lg">
             <thead className="bg-gray-50">
               <tr>
@@ -259,7 +256,7 @@ function MuestrasManager() {
                   ID
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Nombre Muestra
+                  Nombre Origen
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Descripción
@@ -270,30 +267,28 @@ function MuestrasManager() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {muestras.map((muestra) => (
-                <tr key={muestra.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
-                    {muestra.id}
-                  </td>
+              {origenes.map((origen) => (
+                <tr key={origen.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{origen.id}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {muestra.nombre}
+                    {origen.nombre}
                   </td>
                   <td
                     className="px-4 py-3 text-sm text-gray-500 max-w-md truncate"
-                    title={muestra.descripcion}
+                    title={origen.descripcion}
                   >
-                    {muestra.descripcion || '-'}
+                    {origen.descripcion || '-'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm space-x-2">
                     <button
-                      onClick={() => handleEdit(muestra)}
+                      onClick={() => handleEdit(origen)}
                       className="text-indigo-600 hover:text-indigo-900 p-1"
                       title="Editar"
                     >
                       <FiEdit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDelete(muestra.id, muestra.nombre)}
+                      onClick={() => handleDelete(origen.id, origen.nombre)}
                       className="text-red-600 hover:text-red-900 p-1"
                       title="Borrar"
                     >
@@ -309,4 +304,4 @@ function MuestrasManager() {
     </div>
   )
 }
-export default MuestrasManager
+export default OrigenesManager

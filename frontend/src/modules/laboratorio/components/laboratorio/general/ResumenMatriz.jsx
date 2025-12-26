@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiRefreshCw, FiTrash2, FiEdit, FiSearch, FiInbox } from 'react-icons/fi';
-import { allPossibleMetadataFields } from '../../../config/metadataFormFields';
-import { API_BASE_URL } from '../../../config/api'
+import { allPossibleMetadataFields } from '../../../../core/config/metadataFormFields';
+import { API_BASE_URL } from '../../../../core/config/api'
 
 const DATOS_LABORATORIO_CICLO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/ciclo`;
 const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos`;

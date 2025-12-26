@@ -1,50 +1,40 @@
-// src/router/index.jsx
-import React from 'react'
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import React from 'react';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 
 // Layouts
-import MainLayout from '../layouts/MainLayout'
+import MainLayout from '../modules/core/layouts/MainLayout';
 
-// Pages Nuevas (Autenticación y Navegación)
-import LoginPage from '../pages/LoginPage'
-import LaunchpadPage from '../pages/LaunchpadPage'
+// Auth Module
+import LoginPage from '../modules/auth/pages/LoginPage';
 
-// Pages Existentes del Sistema
-import FormulacionPage from '../pages/FormulacionPage'
-import GestionCatalogosPage from '../pages/GestionCatalogosPage'
-import GestionCiclosPage from '../pages/GestionCiclosPage'
-import InformesPage from '../pages/InformesPage'
-import LaboratorioPage from '../pages/LaboratorioPage'
+// Core Module
+import LaunchpadPage from '../modules/core/pages/LaunchpadPage';
 
-// Sub-secciones de Laboratorio
-import CenizasSection from '../pages/laboratorio_main_sections/CenizasSection'
-import LaboratorioGeneralSection from '../pages/laboratorio_main_sections/LaboratorioGeneralSection'
-import NitrogenoSection from '../pages/laboratorio_main_sections/NitrogenoSection'
+// Laboratorio Module
+import LaboratorioPage from '../modules/laboratorio/pages/LaboratorioPage';
+import LaboratorioGeneralSection from '../modules/laboratorio/pages/laboratorio_main_sections/LaboratorioGeneralSection';
+import NitrogenoSection from '../modules/laboratorio/pages/laboratorio_main_sections/NitrogenoSection';
+import CenizasSection from '../modules/laboratorio/pages/laboratorio_main_sections/CenizasSection';
+import FormulacionPage from '../modules/laboratorio/pages/FormulacionPage';
+import GestionCatalogosPage from '../modules/laboratorio/pages/GestionCatalogosPage';
+import GestionCiclosPage from '../modules/laboratorio/pages/GestionCiclosPage';
+import InformesPage from '../modules/laboratorio/pages/InformesPage';
 
-/**
- * Componente de orden superior para proteger rutas.
- * Verifica si existe un token en localStorage.
- */
+// Admin Module
+import UsersPage from '../modules/admin/pages/UsersPage';
+
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  
-  if (!token) {
-    // Si no hay token, redirigir al Login inmediatamente
-    return <Navigate to="/login" replace />;
-  }
-
-  // Si hay token, renderizar el componente hijo
+  if (!token) return <Navigate to="/login" replace />;
   return children;
 };
 
 const router = createBrowserRouter([
   {
-    // Ruta pública: Login
     path: '/login',
     element: <LoginPage />
   },
   {
-    // Ruta Raíz Protegida: El Launchpad (Selector de Módulos)
     path: '/',
     element: (
       <PrivateRoute>
@@ -53,8 +43,6 @@ const router = createBrowserRouter([
     )
   },
   {
-    // Rutas de la Aplicación Principal (Laboratorio y Gestión)
-    // Estas rutas comparten el Sidebar y el Header (MainLayout)
     element: (
       <PrivateRoute>
         <MainLayout />
@@ -69,6 +57,12 @@ const router = createBrowserRouter([
           { path: 'general', element: <LaboratorioGeneralSection /> },
           { path: 'nitrogeno', element: <NitrogenoSection /> },
           { path: 'cenizas', element: <CenizasSection /> }
+        ]
+      },
+      {
+        path: 'admin',
+        children: [
+          { path: 'users', element: <UsersPage /> }
         ]
       },
       {
@@ -90,12 +84,11 @@ const router = createBrowserRouter([
     ]
   },
   {
-    // Manejo de rutas no encontradas (404) -> Volver al inicio
     path: '*',
     element: <Navigate to="/" replace />
   }
-])
+]);
 
 export function AppRouter() {
-  return <RouterProvider router={router} />
+  return <RouterProvider router={router} />;
 }
