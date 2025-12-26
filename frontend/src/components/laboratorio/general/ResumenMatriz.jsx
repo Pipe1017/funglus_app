@@ -1,278 +1,167 @@
-// src/renderer/src/components/laboratorio/general/ResumenMatriz.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiAlertTriangle, FiLayers, FiRefreshCw, FiTrash2, FiEdit
- } from 'react-icons/fi';
+import { FiRefreshCw, FiTrash2, FiEdit, FiSearch, FiInbox } from 'react-icons/fi';
 import { allPossibleMetadataFields } from '../../../config/metadataFormFields';
 import { API_BASE_URL } from '../../../config/api'
 
-
-const FASTAPI_BASE_URL = API_BASE_URL;
-const CATALOGO_CICLOS_ENDPOINT = `${FASTAPI_BASE_URL}/catalogos/ciclos`;
-const DATOS_LABORATORIO_CICLO_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/ciclo`;
-const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/entry`;
-
-const pinnedColumnsConfig = {
-  left: ['etapa_ref.nombre', 'muestra_ref.nombre', 'origen_ref.nombre', 'secuencia_ref.nombre'],
-  right: ['actions']
-};
+const DATOS_LABORATORIO_CICLO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/ciclo`;
+const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos`;
+const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/entry`;
 
 function ResumenMatriz({ onEditClick }) {
-  const [availableCiclosCatalogo, setAvailableCiclosCatalogo] = useState([]);
-  const [selectedCicloCatalogoId, setSelectedCicloCatalogoId] = useState('');
-  const [isLoadingCiclos, setIsLoadingCiclos] = useState(false);
+  const [availableCiclos, setAvailableCiclos] = useState([]);
+  const [selectedCicloId, setSelectedCicloId] = useState('');
   const [datosMatriz, setDatosMatriz] = useState([]);
-  const [isLoadingMatriz, setIsLoadingMatriz] = useState(false);
-  const [errorMatriz, setErrorMatriz] = useState('');
-  const [deleteStatus, setDeleteStatus] = useState({ isLoading: false, error: '', success: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const fetchAvailableCiclosCatalogo = useCallback(async () => {
-    setIsLoadingCiclos(true);
-    try {
-      const response = await fetch(`${CATALOGO_CICLOS_ENDPOINT}/?limit=1000`);
-      if (!response.ok) throw new Error('No se pudieron cargar los ciclos del catálogo.');
-      const data = await response.json();
-      setAvailableCiclosCatalogo(data || []);
-    } catch (error) {
-      setErrorMatriz(`Error cargando lista de ciclos: ${error.message}`);
-    } finally {
-      setIsLoadingCiclos(false);
-    }
+  // 1. Cargar lista de ciclos al inicio
+  useEffect(() => {
+    fetch(`${CATALOGO_CICLOS_ENDPOINT}/?limit=100`)
+      .then(res => res.json())
+      .then(data => setAvailableCiclos(data || []))
+      .catch(err => console.error("Error cargando ciclos", err));
   }, []);
 
-  useEffect(() => {
-    fetchAvailableCiclosCatalogo();
-  }, [fetchAvailableCiclosCatalogo]);
-  
-  const selectedCicloCatalogoNombre = useMemo(() => {
-    if (!selectedCicloCatalogoId || !availableCiclosCatalogo.length) return '';
-    const ciclo = availableCiclosCatalogo.find(c => String(c.id) === String(selectedCicloCatalogoId));
-    return ciclo ? ciclo.nombre_ciclo : '';
-  }, [selectedCicloCatalogoId, availableCiclosCatalogo]);
-
-  const allTableColumns = useMemo(() => {
-    const baseColumns = [
-      { key: 'etapa_ref.nombre', label: 'Etapa', accessor: (row) => row.etapa_ref?.nombre || `ID: ${row.etapa_id}`, width: '7rem' }, // Ancho reducido
-      { key: 'muestra_ref.nombre', label: 'Muestra', accessor: (row) => row.muestra_ref?.nombre || (row.muestra_id ? `ID: ${row.muestra_id}` : 'N/A'), width: '7rem' }, // Ancho reducido
-      { key: 'origen_ref.nombre', label: 'Origen', accessor: (row) => row.origen_ref?.nombre || (row.origen_id ? `ID: ${row.origen_id}` : 'N/A'), width: '7rem' }, // Ancho reducido
-      { key: 'secuencia_ref.nombre', label: 'Secuencia', accessor: (row) => row.secuencia_ref?.nombre || `ID: ${row.secuencia_id}`, width: '7rem' }
+  // 2. Definición de Columnas (Estáticas + Dinámicas)
+  const columns = useMemo(() => {
+    const base = [
+      { key: 'etapa', label: 'Etapa', accessor: r => r.etapa_ref?.nombre, width: '120px' },
+      { key: 'muestra', label: 'Muestra', accessor: r => r.muestra_ref?.nombre, width: '120px' },
+      { key: 'origen', label: 'Origen', accessor: r => r.origen_ref?.nombre, width: '100px' },
+      { key: 'secuencia', label: 'Secuencia', accessor: r => r.secuencia_ref?.nombre, width: '100px' }
     ];
-    let metadataFields = [];
-    if (typeof allPossibleMetadataFields === 'object' && allPossibleMetadataFields !== null) {
-      metadataFields = Object.entries(allPossibleMetadataFields).map(([key, config]) => ({
-        key: key, label: config.label || key,
-        accessor: (row) => (row[key] ?? '-').toString(),
-        width: '10rem' // Ancho por defecto para otras columnas
-      }));
-    }
-    const calculatedBackendFields = [
-      { key: 'humedad_prom_porc', label: 'H. Prom. (%)', accessor: (row) => row.humedad_prom_porc?.toFixed(2) ?? '-', width: '7rem' },
-      { key: 'fdr_prom_kgf', label: 'FDR Prom. (Kgf)', accessor: (row) => row.fdr_prom_kgf?.toFixed(3) ?? '-', width: '7rem' },
-      { key: 'resultado_cenizas_porc', label: 'Cenizas Res. (%)', accessor: (row) => row.resultado_cenizas_porc?.toFixed(2) ?? '-', width: '7rem' },
-      { key: 'resultado_nitrogeno_total_porc', label: 'N Total Res. (%)', accessor: (row) => row.resultado_nitrogeno_total_porc?.toFixed(2) ?? '-', width: '7rem' },
-      { key: 'resultado_nitrogeno_seca_porc', label: 'N Seca Res. (%)', accessor: (row) => row.resultado_nitrogeno_seca_porc?.toFixed(2) ?? '-', width: '7rem' },
-    ];
-    const actionColumn = { key: 'actions', label: 'Acciones', accessor: (row) => row, width: '6rem' };
     
-    const allColumns = [...baseColumns, ...metadataFields, ...calculatedBackendFields, actionColumn];
+    // Campos dinámicos de metadata
+    const meta = Object.entries(allPossibleMetadataFields || {}).map(([k, v]) => ({
+        key: k, label: v.label || k, accessor: r => r[k], width: '100px'
+    }));
 
-    let leftOffset = 0;
-    const columnsWithLeftOffsets = allColumns.map(col => {
-      const augmentedCol = { ...col, left: leftOffset };
-      if (pinnedColumnsConfig.left.includes(col.key)) {
-        leftOffset += parseFloat(col.width) * 16; 
-      }
-      return augmentedCol;
-    });
+    // Campos calculados por el backend
+    const calc = [
+        { key: 'humedad', label: '% Humedad', accessor: r => r.humedad_prom_porc != null ? r.humedad_prom_porc.toFixed(1) : '-', width: '90px' },
+        { key: 'cenizas', label: '% Cenizas', accessor: r => r.resultado_cenizas_porc != null ? r.resultado_cenizas_porc.toFixed(2) : '-', width: '90px' },
+        { key: 'ntotal', label: '% N Total', accessor: r => r.resultado_nitrogeno_total_porc != null ? r.resultado_nitrogeno_total_porc.toFixed(2) : '-', width: '90px' },
+    ];
 
-    let rightOffset = 0;
-    const columnsWithAllOffsets = columnsWithLeftOffsets.reverse().map(col => {
-        const augmentedCol = { ...col, right: rightOffset };
-        if (pinnedColumnsConfig.right.includes(col.key)) {
-            rightOffset += parseFloat(col.width) * 16;
-        }
-        return augmentedCol;
-    }).reverse();
+    const actions = { key: 'actions', label: '', width: '80px' };
 
-    return columnsWithAllOffsets;
+    return [...base, ...meta, ...calc, actions];
   }, []);
 
-  const fetchDatosMatriz = useCallback(async () => {
-    if (!selectedCicloCatalogoId) { setDatosMatriz([]); return; }
-    setIsLoadingMatriz(true); setErrorMatriz('');
-    try {
-      const response = await fetch(`${DATOS_LABORATORIO_CICLO_ENDPOINT}/${selectedCicloCatalogoId}?limit=1000`);
-      if (!response.ok) throw new Error('No se pudieron cargar los datos de la matriz.');
-      const data = await response.json();
-      setDatosMatriz(data || []);
-    } catch (err) {
-      setErrorMatriz(`Error al cargar datos de la matriz: ${err.message}`);
-    } finally {
-      setIsLoadingMatriz(false);
+  // 3. Obtener datos de la matriz
+  const fetchData = useCallback(async () => {
+    if (!selectedCicloId) {
+        setDatosMatriz([]);
+        return;
     }
-  }, [selectedCicloCatalogoId]);
+    setIsLoading(true);
+    try {
+        const res = await fetch(`${DATOS_LABORATORIO_CICLO_ENDPOINT}/${selectedCicloId}?limit=1000`);
+        const data = await res.json();
+        setDatosMatriz(data || []);
+        setError('');
+    } catch (e) { setError(e.message); }
+    finally { setIsLoading(false); }
+  }, [selectedCicloId]);
 
-  useEffect(() => {
-    if (selectedCicloCatalogoId) fetchDatosMatriz();
-    else setDatosMatriz([]);
-  }, [selectedCicloCatalogoId, fetchDatosMatriz]);
+  useEffect(() => { fetchData() }, [fetchData]);
 
-  const handleDeleteEntry = async (rowData) => {
-    const { ciclo_id, etapa_id, muestra_id, origen_id, secuencia_id } = rowData; // <-- Asegúrate de tener secuencia_id
-    if (!window.confirm(`¿Seguro que quieres borrar la entrada para la etapa "${rowData.etapa_ref?.nombre}"?`)) return;
-
-    setDeleteStatus({ isLoading: true, error: '', success: '' });
+  // 4. Borrar entrada
+  const handleDelete = async (row) => {
+    if (!confirm("¿Estás seguro de eliminar este registro? Esta acción borrará los metadatos asociados.")) return;
     
-    // MODIFICADO: Construir la URL con query parameters
+    // Usamos URL Search Params para el DELETE
     const url = new URL(DATOS_LABORATORIO_ENTRY_ENDPOINT);
-    url.searchParams.append('ciclo_id', ciclo_id);
-    url.searchParams.append('etapa_id', etapa_id);
-    url.searchParams.append('muestra_id', muestra_id);
-    url.searchParams.append('origen_id', origen_id);
-    url.searchParams.append('secuencia_id', secuencia_id);
-
+    url.searchParams.append('ciclo_id', row.ciclo_id);
+    url.searchParams.append('etapa_id', row.etapa_id);
+    url.searchParams.append('muestra_id', row.muestra_id);
+    url.searchParams.append('origen_id', row.origen_id);
+    url.searchParams.append('secuencia_id', row.secuencia_id);
+    
     try {
-      // MODIFICADO: No se envía `body` en la solicitud DELETE
-      const response = await fetch(url, { 
-        method: 'DELETE', 
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) throw new Error((await response.json()).detail || 'Error al borrar.');
-      
-      const result = await response.json();
-      setDeleteStatus({ isLoading: false, error: '', success: result.message || 'Borrado exitoso.' });
-      fetchDatosMatriz(); // Recargar la matriz
-    } catch (err) {
-      setDeleteStatus({ isLoading: false, error: `Error: ${err.message}`, success: '' });
-    } finally {
-      setTimeout(() => setDeleteStatus(prev => ({ ...prev, success: '', error: '' })), 4000);
+        await fetch(url, { method: 'DELETE' });
+        fetchData(); // Recargar tabla
+    } catch(err) {
+        alert("Error al borrar: " + err.message);
     }
   };
 
   return (
-    <div className="space-y-4 p-1">
-      {/* ===== SECCIÓN PARA SELECCIONAR EL CICLO (DESPLEGABLE) ===== */}
-      <div className="p-3 bg-gray-100 rounded-lg border border-gray-200">
-        <label htmlFor="resumenCicloSelect" className="block text-sm font-medium text-gray-700 mb-1">
-          <FiLayers className="inline mr-2" />
-          Seleccione un Ciclo (Catálogo) para ver su Resumen General:
-        </label>
-        <div className="flex items-center gap-x-2">
-          <select
-            id="resumenCicloSelect" value={selectedCicloCatalogoId} onChange={(e) => setSelectedCicloCatalogoId(e.target.value)} disabled={isLoadingCiclos}
-            className="block w-full md:w-1/2 lg:w-1/3 px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          >
-            <option value="">-- Seleccione un Ciclo --</option>
-            {availableCiclosCatalogo.map((ciclo) => ( <option key={ciclo.id} value={ciclo.id}>{ciclo.nombre_ciclo}</option> ))}
-          </select>
-          <button onClick={fetchAvailableCiclosCatalogo} disabled={isLoadingCiclos} className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-gray-200" title="Refrescar lista de ciclos">
-            <FiRefreshCw className={`h-5 w-5 ${isLoadingCiclos ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+    <div className="space-y-4">
+      {/* Selector de Ciclo (Diseño Limpio) */}
+      <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-lg border border-gray-100 transition-colors focus-within:bg-white focus-within:border-brand-200">
+        <FiSearch className="text-gray-400" />
+        <select 
+            value={selectedCicloId} 
+            onChange={e => setSelectedCicloId(e.target.value)}
+            className="bg-transparent border-none text-sm font-medium text-gray-700 focus:ring-0 w-full cursor-pointer outline-none placeholder-gray-400"
+        >
+            <option value="">Seleccione un Ciclo de Trabajo para cargar datos...</option>
+            {availableCiclos.map(c => <option key={c.id} value={c.id}>{c.nombre_ciclo}</option>)}
+        </select>
+        {selectedCicloId && (
+            <button onClick={fetchData} className="text-brand-600 hover:text-brand-800 p-1 bg-white rounded-md shadow-sm border border-gray-100">
+                <FiRefreshCw className={isLoading ? "animate-spin" : ""} />
+            </button>
+        )}
       </div>
 
-      {/* ===== SECCIÓN PARA LA MATRIZ DE DATOS (VISIBLE SI HAY CICLO SELECCIONADO) ===== */}
-      {selectedCicloCatalogoId && (
-        <div className="space-y-3 mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-gray-700">
-              Resumen de Datos para Ciclo:{' '} <span className="text-indigo-600">{selectedCicloCatalogoNombre || selectedCicloCatalogoId}</span>
-            </h3>
-            <button onClick={fetchDatosMatriz} disabled={isLoadingMatriz || deleteStatus.isLoading} className="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-md hover:bg-gray-300 disabled:opacity-50 flex items-center" title="Refrescar resumen">
-              <FiRefreshCw className={`mr-1.5 h-3 w-3 ${isLoadingMatriz ? 'animate-spin' : ''}`} /> Refrescar
-            </button>
-          </div>
-
-          {deleteStatus.error && <p className="my-2 text-xs p-2.5 rounded-md border bg-red-50 text-red-700"><FiAlertTriangle className="inline mr-1" /> {deleteStatus.error}</p>}
-          {deleteStatus.success && <p className="my-2 text-xs p-2.5 rounded-md border bg-green-50 text-green-700">{deleteStatus.success}</p>}
-          {errorMatriz && !isLoadingMatriz && <p className="my-2 text-xs p-2.5 rounded-md border bg-red-50 text-red-700"><FiAlertTriangle className="inline mr-1" /> {errorMatriz}</p>}
-          
-          {isLoadingMatriz && <p className="text-sm text-gray-500 p-4 text-center italic">Cargando datos...</p>}
-          
-          {!isLoadingMatriz && !errorMatriz && datosMatriz.length === 0 && <p className="text-sm text-gray-500 p-4 text-center bg-gray-50 rounded-md">No hay datos para el ciclo seleccionado.</p>}
-
-          {datosMatriz.length > 0 && Array.isArray(allTableColumns) && (
-            <div className="overflow-x-auto shadow-md rounded-lg border max-h-[600px]">
-              <table 
-                className="min-w-full text-xs border-collapse"
-                style={{
-                  // Define los anchos como variables CSS. Puedes ajustarlos aquí.
-                  '--width-col-1': '10rem', // 160px
-                  '--width-col-2': '10rem', // 160px
-                  '--width-col-3': '10rem', // 160px
-                }}
-              >
-                <thead className="bg-gray-100 sticky top-0 z-20">
-                  <tr>
-                    {allTableColumns.map((col, index) => {
-                      const isPinnedLeft = pinnedColumnsConfig.left.includes(col.key);
-                      const isPinnedRight = pinnedColumnsConfig.right.includes(col.key);
-                      const style = { width: col.width, minWidth: col.width };
-                      
-                      let stickyClass = '';
-                      if (isPinnedLeft) {
-                          style.left = col.left + 'px';
-                          stickyClass = 'sticky z-10 bg-gray-50'; // El fondo es crucial
-                      }
-                      if (isPinnedRight) {
-                          style.right = col.right + 'px';
-                          stickyClass = 'sticky z-10 bg-gray-50';
-                      }
-                      
-                      return (
-                        <th key={col.key} scope="col" style={style}
-                          className={`px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap ${stickyClass}`}
-                        >
-                          {col.label}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {datosMatriz.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50 group">
-                      {allTableColumns.map((col, index) => {
-                        const isPinnedLeft = pinnedColumnsConfig.left.includes(col.key);
-                        const isPinnedRight = pinnedColumnsConfig.right.includes(col.key);
-                        const style = { width: col.width, minWidth: col.width };
-                        
-                        let stickyClass = '';
-                        if (isPinnedLeft) {
-                            style.left = col.left + 'px';
-                            stickyClass = 'sticky bg-white group-hover:bg-gray-50'; // El fondo es crucial
-                        }
-                        if (isPinnedRight) {
-                            style.right = col.right + 'px';
-                            stickyClass = 'sticky bg-white group-hover:bg-gray-50';
-                        }
-                        
-                        return (
-                          <td key={`${row.id}-${col.key}`} style={style}
-                            className={`px-3 py-2 whitespace-nowrap text-gray-700 ${stickyClass}`}
-                          >
-                            {col.key === 'actions' ? (
-                                <div className="flex items-center space-x-2">
-                                    <button onClick={() => onEditClick(row)} className="text-blue-500 hover:text-blue-700 p-1" title="Editar esta entrada" >
-                                        <FiEdit size={14} />
-                                    </button>
-                                    <button onClick={() => handleDeleteEntry(row)} disabled={deleteStatus.isLoading} className="text-red-500 hover:text-red-700 disabled:opacity-50 p-1" title="Borrar">
-                                        <FiTrash2 size={14} />
-                                    </button>
-                                </div>
-                            ) : ( col.accessor(row) ?? '-' )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* Tabla de Datos */}
+      <div className="overflow-hidden rounded-lg border border-gray-100 shadow-sm relative min-h-[300px]">
+        {/* Loading Overlay */}
+        {isLoading && (
+            <div className="absolute inset-0 bg-white/80 z-20 flex flex-col items-center justify-center text-brand-600 text-sm backdrop-blur-[1px]">
+                <FiRefreshCw className="animate-spin mb-2 text-2xl" />
+                Cargando registros...
             </div>
-          )}
-        </div>
-      )}
+        )}
+
+        {/* Empty State */}
+        {!selectedCicloId ? (
+             <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 bg-gray-50/50">
+                <FiInbox className="text-4xl mb-2 opacity-50" />
+                <span className="text-sm">Seleccione un ciclo arriba para comenzar</span>
+             </div>
+        ) : (
+            <div className="max-h-[600px] overflow-y-auto">
+                <table className="min-w-full text-left text-xs">
+                    <thead className="bg-brand-50 text-brand-900 font-bold sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            {columns.map((col) => (
+                                <th key={col.key} className="px-4 py-3 whitespace-nowrap tracking-wide" style={{ minWidth: col.width }}>
+                                    {col.label}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 bg-white">
+                        {datosMatriz.length === 0 ? (
+                            <tr><td colSpan={columns.length} className="p-10 text-center text-gray-400 italic">No se encontraron datos para este ciclo.</td></tr>
+                        ) : (
+                            datosMatriz.map((row) => (
+                                <tr key={row.id} className="hover:bg-brand-50/40 transition-colors group">
+                                    {columns.map((col) => (
+                                        <td key={col.key} className="px-4 py-2.5 whitespace-nowrap text-gray-600">
+                                            {col.key === 'actions' ? (
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                                    <button onClick={() => onEditClick(row)} className="text-brand-600 hover:bg-brand-100 p-1.5 rounded-md transition-colors" title="Editar"><FiEdit /></button>
+                                                    <button onClick={() => handleDelete(row)} className="text-red-400 hover:bg-red-50 p-1.5 rounded-md transition-colors" title="Eliminar"><FiTrash2 /></button>
+                                                </div>
+                                            ) : (
+                                                col.accessor(row)
+                                            )}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        )}
+      </div>
     </div>
   );
 }
+
 export default ResumenMatriz;

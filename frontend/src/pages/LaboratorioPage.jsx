@@ -1,44 +1,45 @@
-// src/renderer/src/pages/LaboratorioPage.jsx
+// src/pages/LaboratorioPage.jsx
 import React from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-// Ya no necesitamos CicloManager aquí directamente.
-// La selección de claves se manejará dentro de la sección "General" o en los formularios específicos.
 
 function LaboratorioPage() {
   const labSubSections = [
-    { name: 'GENERAL', path: 'general' }, // Para Ciclo, Selección de Identificadores y Metadata General
-    { name: 'ANÁLISIS DE NITRÓGENO', path: 'nitrogeno' },
-    { name: 'ANÁLISIS DE CENIZAS', path: 'cenizas' }
+    { name: 'General', path: 'general' },
+    { name: 'Análisis de Nitrógeno', path: 'nitrogeno' },
+    { name: 'Análisis de Cenizas', path: 'cenizas' }
   ]
 
+  // Estilo de Pestañas Moderno
   const navLinkClasses = ({ isActive }) =>
-    `px-4 py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out shadow-sm border ${
+    `px-5 py-2.5 rounded-t-lg text-sm font-medium transition-all duration-200 border-b-2 ${
       isActive
-        ? 'bg-indigo-600 text-white border-indigo-700'
-        : 'bg-white text-indigo-700 hover:bg-indigo-50 border-indigo-300'
+        ? 'border-brand-500 text-brand-600 bg-brand-50'
+        : 'border-transparent text-gray-500 hover:text-brand-500 hover:bg-gray-50'
     }`
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">Módulo de Laboratorio</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-light text-brand-900">
+          Laboratorio <span className="font-bold text-gray-400">/</span> Control de Calidad
+        </h1>
+      </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4">Sub-Módulos de Laboratorio</h2>
-        <nav className="mb-6 border-b pb-4">
-          <ul className="flex flex-wrap gap-x-3 gap-y-2">
-            {labSubSections.map((section) => (
-              <li key={section.path}>
-                <NavLink to={section.path} className={navLinkClasses}>
-                  {section.name}
+      <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {/* Header de Navegación */}
+        <div className="px-6 pt-4 border-b border-gray-100">
+            <nav className="flex space-x-2">
+                {labSubSections.map((section) => (
+                <NavLink key={section.path} to={section.path} className={navLinkClasses}>
+                    {section.name}
                 </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="mt-1 p-2 bg-gray-50 rounded-b-lg min-h-[300px]">
-          {' '}
-          {/* Añadido min-h para mejor visualización */}
-          <Outlet /> {/* Aquí se renderizarán LaboratorioGeneralSection, NitrogenoSection, etc. */}
+                ))}
+            </nav>
+        </div>
+
+        {/* Contenido */}
+        <div className="p-6 bg-surface min-h-[400px]">
+          <Outlet /> 
         </div>
       </div>
     </div>
