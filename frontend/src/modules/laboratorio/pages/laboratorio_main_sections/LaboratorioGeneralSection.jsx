@@ -11,13 +11,31 @@ function LaboratorioGeneralSection() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCatalogoKeys, setSelectedCatalogoKeys] = useState(null);
   const [initialCicloId, setInitialCicloId] = useState(null);
+  // NUEVO: Estado para los parámetros de resaltado
+  const [highlightParams, setHighlightParams] = useState(null);
   const matrizRef = useRef(null);
 
-  // Leer parámetro ciclo_id de URL
+  // Leer parámetro ciclo_id y otros de URL
   useEffect(() => {
     const cicloParam = searchParams.get('ciclo');
+    const etapaParam = searchParams.get('etapa');
+    const muestraParam = searchParams.get('muestra');
+    const origenParam = searchParams.get('origen');
+
     if (cicloParam) {
       setInitialCicloId(parseInt(cicloParam));
+      
+      // Si vienen los 3 parámetros de identificación, los guardamos para el resaltado
+      if (etapaParam && muestraParam && origenParam) {
+        setHighlightParams({
+            etapa_id: parseInt(etapaParam),
+            muestra_id: parseInt(muestraParam),
+            origen_id: parseInt(origenParam)
+        });
+      } else {
+        setHighlightParams(null); // Reset si solo es el ciclo
+      }
+
       // Scroll a la tabla después de un momento
       setTimeout(() => {
         matrizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -99,7 +117,12 @@ function LaboratorioGeneralSection() {
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
               <FiDatabase /> Matriz de Datos Consolidados
             </h3>
-            <ResumenMatriz onEditClick={handleEditFromMatriz} initialCicloId={initialCicloId} />
+            {/* MODIFICADO: Se pasa la nueva prop highlightParams */}
+            <ResumenMatriz 
+                onEditClick={handleEditFromMatriz} 
+                initialCicloId={initialCicloId} 
+                highlightParams={highlightParams} 
+            />
           </section>
 
       </div>

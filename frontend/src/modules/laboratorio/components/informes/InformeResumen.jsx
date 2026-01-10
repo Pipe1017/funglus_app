@@ -84,8 +84,8 @@ export default function InformeResumen() {
     if (!canEditLaboratorio) return
     
     if (section === 'general') {
-      // General solo necesita ciclo para mostrar la tabla filtrada
-      navigate(`/laboratorio/general?ciclo=${row.ciclo_id}`)
+      // MODIFICADO: Ahora envía también etapa, muestra y origen para el resaltado específico
+      navigate(`/laboratorio/general?ciclo=${row.ciclo_id}&etapa=${row.etapa_id}&muestra=${row.muestra_id}&origen=${row.origen_id}`)
     } else if (section === 'cenizas' || section === 'nitrogeno') {
       // Nitrógeno y Cenizas reciben ciclo_id y buscan el lote de procesamiento
       const path = section === 'cenizas' ? '/laboratorio/cenizas' : '/laboratorio/nitrogeno'

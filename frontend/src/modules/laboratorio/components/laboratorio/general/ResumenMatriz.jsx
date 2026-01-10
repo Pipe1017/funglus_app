@@ -8,7 +8,8 @@ const DATOS_LABORATORIO_CICLO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/cicl
 const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos`;
 const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/entry`;
 
-function ResumenMatriz({ onEditClick, initialCicloId }) {
+// MODIFICADO: Se agrega highlightParams a las props
+function ResumenMatriz({ onEditClick, initialCicloId, highlightParams }) {
   const [availableCiclos, setAvailableCiclos] = useState([]);
   const [selectedCicloId, setSelectedCicloId] = useState('');
   const [datosMatriz, setDatosMatriz] = useState([]);
@@ -102,7 +103,14 @@ function ResumenMatriz({ onEditClick, initialCicloId }) {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {datosMatriz.map((row) => {
-                            const isHighlighted = initialCicloId && row.ciclo_id === initialCicloId;
+                            // MODIFICADO: Lógica de resaltado mejorada
+                            // Si hay highlightParams, debe coincidir TODO. Si no, usa lógica antigua (ciclo).
+                            const isHighlighted = highlightParams 
+                                ? (row.etapa_id === highlightParams.etapa_id && 
+                                   row.muestra_id === highlightParams.muestra_id && 
+                                   row.origen_id === highlightParams.origen_id)
+                                : (initialCicloId && row.ciclo_id === initialCicloId);
+
                             return (
                             <tr key={row.id} className={`transition-colors group ${isHighlighted ? 'bg-yellow-100 hover:bg-yellow-200' : 'hover:bg-blue-50/30'}`}>
                                 {/* Celdas Fijas */}
