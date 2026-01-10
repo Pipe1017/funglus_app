@@ -122,6 +122,16 @@ const router = createBrowserRouter([
         )
       },
       
+      // Módulo Informes (independiente)
+      {
+        path: 'informes',
+        element: (
+          <ModuleRoute requiredModule="informes">
+            <InformesPage />
+          </ModuleRoute>
+        )
+      },
+      
       // RUTAS INDEPENDIENTES (fuera de laboratorio)
       {
         path: 'gestion-ciclos',
@@ -130,10 +140,6 @@ const router = createBrowserRouter([
       {
         path: 'formulacion',
         element: <FormulacionPage />
-      },
-      {
-        path: 'informes',
-        element: <InformesPage />
       },
       {
         path: 'gestion-catalogos',

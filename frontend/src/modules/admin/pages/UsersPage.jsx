@@ -90,6 +90,7 @@ export default function UsersPage() {
   const getRoleBadgeColor = (role) => {
     const colors = {
       admin: 'bg-purple-100 text-purple-800 border-purple-200',
+      manager: 'bg-indigo-100 text-indigo-800 border-indigo-200',
       operator: 'bg-blue-100 text-blue-800 border-blue-200',
       viewer: 'bg-gray-100 text-gray-800 border-gray-200'
     };
@@ -99,6 +100,7 @@ export default function UsersPage() {
   const getRoleIcon = (role) => {
     const icons = {
       admin: '⚡',
+      manager: '👨‍💼',
       operator: '✏️',
       viewer: '👁️'
     };
@@ -234,7 +236,7 @@ export default function UsersPage() {
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.role)}`}>
                         <span>{getRoleIcon(user.role)}</span>
-                        {user.role === 'admin' ? 'Administrador' : user.role === 'operator' ? 'Operador' : 'Visor'}
+                        {user.role === 'admin' ? 'Administrador' : user.role === 'manager' ? 'Gerente' : user.role === 'operator' ? 'Operador' : 'Visor'}
                       </span>
                     </td>
                     <td className="px-6 py-4">

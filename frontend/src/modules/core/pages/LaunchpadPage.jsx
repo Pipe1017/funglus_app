@@ -5,7 +5,8 @@ import {
   CiBeaker1, 
   CiTempHigh, 
   CiSettings, 
-  CiLogout
+  CiLogout,
+  CiFileOn
 } from 'react-icons/ci';
 import { FiLock } from 'react-icons/fi';
 
@@ -105,6 +106,16 @@ export default function LaunchpadPage() {
           colorClass="text-blue-600 bg-blue-600"
           onClick={() => handleModuleClick('/laboratorio', 'laboratorio')}
           isLocked={!hasModuleAccess('laboratorio')}
+        />
+
+        {/* Módulo Informes */}
+        <ModuleCard 
+          title="Informes" 
+          icon={CiFileOn}
+          description="Visualización de informes, resúmenes y análisis históricos del laboratorio."
+          colorClass="text-purple-600 bg-purple-600"
+          onClick={() => handleModuleClick('/informes', 'informes')}
+          isLocked={!hasModuleAccess('informes')}
         />
 
         {/* Módulo Siembra */}

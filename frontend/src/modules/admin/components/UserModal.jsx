@@ -3,15 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiSave, FiAlertCircle } from 'react-icons/fi';
 import { API_BASE_URL } from '../../core/config/api';
 
-// SOLO LOS 3 MÓDULOS QUE EXISTEN
 const AVAILABLE_MODULES = [
   { id: 'laboratorio', label: 'Laboratorio', icon: '🧪' },
+  { id: 'informes', label: 'Informes', icon: '📄' },
   { id: 'siembra', label: 'Siembra', icon: '🌱' },
   { id: 'incubacion', label: 'Incubación', icon: '🌡️' }
 ];
 
 const ROLES = [
   { value: 'admin', label: 'Administrador', description: 'Acceso completo al sistema' },
+  { value: 'manager', label: 'Gerente', description: 'Solo acceso a informes' },
   { value: 'operator', label: 'Operador', description: 'Puede ver y editar en módulos permitidos' },
   { value: 'viewer', label: 'Visor', description: 'Solo lectura en módulos permitidos' }
 ];
@@ -214,6 +215,7 @@ export default function UserModal({ user, onClose }) {
             </select>
             <p className="mt-1 text-xs text-gray-500">
               {formData.role === 'admin' && '⚡ Acceso completo al sistema'}
+              {formData.role === 'manager' && '👨‍💼 Solo acceso a informes'}
               {formData.role === 'operator' && '✏️ Puede ver y editar en módulos permitidos'}
               {formData.role === 'viewer' && '👁️ Solo lectura en módulos permitidos'}
             </p>
