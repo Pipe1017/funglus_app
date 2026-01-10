@@ -1,5 +1,6 @@
 // Ubicación: frontend/src/modules/laboratorio/pages/laboratorio_main_sections/NitrogenoSection.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   FiActivity, FiCheckSquare, FiFilter, FiInfo, FiLayers,
   FiList, FiPlusSquare, FiRefreshCw, FiSave, FiTrendingUp,
@@ -21,6 +22,7 @@ const initialRegistroFormState = {
 };
 
 export default function NitrogenoSection() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [ciclosProcesamientoNitrogeno, setCiclosProcesamientoNitrogeno] = useState([]);
   const [selectedCicloProcesamientoId, setSelectedCicloProcesamientoId] = useState('');
   const [isLoadingCiclosProc, setIsLoadingCiclosProc] = useState(false);
@@ -54,6 +56,24 @@ export default function NitrogenoSection() {
   }, []);
 
   useEffect(() => { fetchCiclosProcesamiento(); }, [fetchCiclosProcesamiento]);
+
+  // Leer parámetro ciclo_id de URL y seleccionar lote automáticamente
+  useEffect(() => {
+    const cicloParam = searchParams.get('ciclo');
+    if (cicloParam && ciclosProcesamientoNitrogeno.length > 0) {
+      // Buscar un registro de nitrógeno que tenga este ciclo_catalogo_id
+      fetch(`${REGISTROS_NITROGENO_ENDPOINT}/?ciclo_catalogo_id=${cicloParam}&limit=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0 && data[0].ciclo_procesamiento_id) {
+            setSelectedCicloProcesamientoId(data[0].ciclo_procesamiento_id.toString());
+          }
+        })
+        .catch(err => console.error('Error buscando lote:', err));
+      
+      setSearchParams({}); // Limpiar URL
+    }
+  }, [searchParams, setSearchParams, ciclosProcesamientoNitrogeno]);
 
   // --- 2. Cargar Registros ---
   const fetchRegistros = useCallback(async (cicloId) => {
@@ -231,36 +251,51 @@ export default function NitrogenoSection() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4 animate-in fade-in duration-500">
-      {/* Encabezado Compacto */}
-      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-        <div className="flex items-center gap-2 text-brand-700">
-            <div className="p-1.5 bg-brand-50 rounded text-brand-600"><FiActivity size={18} /></div>
-            <h2 className="text-base font-bold">Nitrógeno</h2>
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      
+      {/* Encabezado */}
+      <div className="flex items-center space-x-3 border-b border-gray-100 pb-4">
+        <div className="p-2 bg-brand-50 rounded-lg text-brand-600">
+          <FiActivity size={24} />
         </div>
-        
-        {/* Selector de Lote Inline */}
-        <div className="flex items-center gap-2">
-            <select 
-                value={selectedCicloProcesamientoId} 
-                onChange={(e) => { setSelectedCicloProcesamientoId(e.target.value); resetFormAndExitEditing(); }}
-                className="text-xs border-gray-200 rounded py-1 pl-2 pr-8 focus:ring-1 focus:ring-brand-500"
-            >
-                <option value="">-- Seleccionar Lote --</option>
-                {ciclosProcesamientoNitrogeno.map(c => (
-                    <option key={c.id} value={c.id}>{c.identificador_lote} ({new Date(c.fecha_hora_lote).toLocaleDateString()})</option>
-                ))}
-            </select>
-            <button onClick={fetchCiclosProcesamiento} className="text-gray-400 hover:text-brand-600"><FiRefreshCw size={14} className={isLoadingCiclosProc ? 'animate-spin':''} /></button>
+        <div>
+          <h2 className="text-lg font-bold text-gray-800">Gestión de Nitrógeno</h2>
+          <p className="text-sm text-gray-500">Registro y análisis de contenido de nitrógeno.</p>
         </div>
       </div>
 
+      {/* Selector de Lote */}
+      <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+          <FiLayers /> Seleccionar Lote de Procesamiento
+        </h3>
+        <div className="flex items-center gap-2">
+          <select 
+            value={selectedCicloProcesamientoId} 
+            onChange={(e) => { setSelectedCicloProcesamientoId(e.target.value); resetFormAndExitEditing(); }}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-brand-500 focus:border-brand-500"
+          >
+            <option value="">-- Seleccionar Lote --</option>
+            {ciclosProcesamientoNitrogeno.map(c => (
+              <option key={c.id} value={c.id}>{c.identificador_lote} ({new Date(c.fecha_hora_lote).toLocaleDateString()})</option>
+            ))}
+          </select>
+          <button 
+            onClick={fetchCiclosProcesamiento} 
+            className="p-2 text-gray-400 hover:text-brand-600 bg-gray-50 border border-gray-200 rounded-lg"
+            title="Refrescar lotes"
+          >
+            <FiRefreshCw size={18} className={isLoadingCiclosProc ? 'animate-spin':''} />
+          </button>
+        </div>
+      </section>
+
       {selectedCicloProcesamientoId && (
         <>
-          {/* Card Única de Trabajo (Grid Layout) */}
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-            <h3 className="text-xs font-bold uppercase text-gray-500 mb-3 flex items-center gap-2">
-                <FiPlusSquare /> {editingRecordId ? 'Editando Registro' : 'Nuevo Ingreso'}
+          {/* Formulario de Registro */}
+          <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+              <FiPlusSquare /> {editingRecordId ? 'Editando Registro' : 'Nuevo Registro'}
             </h3>
 
             {/* Contexto */}
@@ -320,7 +355,7 @@ export default function NitrogenoSection() {
                 {statusMessage.error && <p className="text-red-500 text-[10px] mt-1 text-right">{statusMessage.error}</p>}
                 {statusMessage.success && <p className="text-green-500 text-[10px] mt-1 text-right">{statusMessage.success}</p>}
             </form>
-          </div>
+          </section>
 
           {/* Tabla Densa */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">

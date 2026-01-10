@@ -24,11 +24,8 @@ function MainLayout() {
   const pathSegment = location.pathname.split('/')[1]
   
   // Rutas que pertenecen al módulo Laboratorio
-  const laboratorioRoutes = ['laboratorio', 'gestion-ciclos', 'formulacion', 'gestion-catalogos']
-  
-  const currentModule = laboratorioRoutes.includes(pathSegment) 
-    ? 'laboratorio' 
-    : pathSegment // siembra, incubacion, informes, etc
+  const laboratorioRoutes = ['laboratorio', 'gestion-ciclos', 'formulacion', 'gestion-catalogos', 'informes']
+  const currentModule = laboratorioRoutes.includes(pathSegment) ? 'laboratorio' : pathSegment
 
   // Clases para los links del sidebar
   const commonLinkClasses =
@@ -74,10 +71,6 @@ function MainLayout() {
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
             Laboratorio
           </div>
-          <NavLink to="/laboratorio/general" className={() => navLinkClass('/laboratorio/general')}>
-            <CiBeaker1 className="mr-3 h-6 w-6 flex-shrink-0" /> 
-            {!sidebarCollapsed && 'Datos Generales'}
-          </NavLink>
           <NavLink to="/gestion-ciclos" className={() => navLinkClass('/gestion-ciclos')}>
             <CiRepeat className="mr-3 h-6 w-6 flex-shrink-0" /> 
             {!sidebarCollapsed && 'Gestión de Ciclos'}
@@ -86,21 +79,13 @@ function MainLayout() {
             <CiGrid41 className="mr-3 h-6 w-6 flex-shrink-0" /> 
             {!sidebarCollapsed && 'Formulación'}
           </NavLink>
-          <NavLink to="/gestion-catalogos" className={() => navLinkClass('/gestion-catalogos')}>
-            <CiSettings className="mr-3 h-6 w-6 flex-shrink-0" /> 
-            {!sidebarCollapsed && 'Catálogos'}
-          </NavLink>
-        </>
-      )
-    } else if (currentModule === 'informes') {
-      return (
-        <>
-          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
-            Informes
-          </div>
           <NavLink to="/informes" className={() => navLinkClass('/informes')}>
             <CiFileOn className="mr-3 h-6 w-6 flex-shrink-0" /> 
             {!sidebarCollapsed && 'Informes'}
+          </NavLink>
+          <NavLink to="/gestion-catalogos" className={() => navLinkClass('/gestion-catalogos')}>
+            <CiSettings className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Catálogos'}
           </NavLink>
         </>
       )

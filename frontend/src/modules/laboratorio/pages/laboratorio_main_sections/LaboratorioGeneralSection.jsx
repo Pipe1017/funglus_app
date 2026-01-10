@@ -1,5 +1,6 @@
 // Ubicación: frontend/src/modules/laboratorio/pages/laboratorio_main_sections/LaboratorioGeneralSection.jsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiEdit, FiFilter, FiDatabase, FiClipboard } from 'react-icons/fi';
 // Asegúrate de que estas rutas de importación sean correctas
 import IdentificadoresSelectForm from '../../components/laboratorio/general/IdentificadoresSelectForm';
@@ -7,7 +8,23 @@ import MetadataForm from '../../components/laboratorio/general/MetadataForm';
 import ResumenMatriz from '../../components/laboratorio/general/ResumenMatriz';
 
 function LaboratorioGeneralSection() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCatalogoKeys, setSelectedCatalogoKeys] = useState(null);
+  const [initialCicloId, setInitialCicloId] = useState(null);
+  const matrizRef = useRef(null);
+
+  // Leer parámetro ciclo_id de URL
+  useEffect(() => {
+    const cicloParam = searchParams.get('ciclo');
+    if (cicloParam) {
+      setInitialCicloId(parseInt(cicloParam));
+      // Scroll a la tabla después de un momento
+      setTimeout(() => {
+        matrizRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+      setSearchParams({}); // Limpiar URL
+    }
+  }, [searchParams, setSearchParams]);
 
   const handleCatalogoKeysConfirm = useCallback((keys) => {
     setSelectedCatalogoKeys(keys);
@@ -78,11 +95,11 @@ function LaboratorioGeneralSection() {
           )}
 
           {/* Bloque 3: Matriz de Datos (Tabla Completa) */}
-          <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+          <section ref={matrizRef} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
               <FiDatabase /> Matriz de Datos Consolidados
             </h3>
-            <ResumenMatriz onEditClick={handleEditFromMatriz} />
+            <ResumenMatriz onEditClick={handleEditFromMatriz} initialCicloId={initialCicloId} />
           </section>
 
       </div>

@@ -39,6 +39,12 @@ export default function InformeResumen() {
       if (!response.ok) throw new Error('No se pudieron cargar los ciclos.');
       const data = await response.json();
       setCiclos(data || []);
+      
+      // Cargar último ciclo visto
+      const lastCiclo = localStorage.getItem('last_informe_ciclo');
+      if (lastCiclo && data.some(c => c.id === parseInt(lastCiclo))) {
+        setSelectedCicloId(lastCiclo);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,6 +59,10 @@ export default function InformeResumen() {
       setInformeData([]);
       return;
     }
+    
+    // Guardar último ciclo visto
+    localStorage.setItem('last_informe_ciclo', selectedCicloId);
+    
     setIsLoading(true);
     setError('');
     try {
@@ -73,20 +83,13 @@ export default function InformeResumen() {
   const handleCellClick = (section, row) => {
     if (!canEditLaboratorio) return
     
-    const params = new URLSearchParams({
-      ciclo: row.ciclo_id,
-      etapa: row.etapa_id,
-      muestra: row.muestra_id,
-      origen: row.origen_id,
-      secuencia: row.secuencia_id || ''
-    })
-    
     if (section === 'general') {
-      navigate(`/laboratorio/general?${params}`)
-    } else if (section === 'cenizas') {
-      navigate(`/laboratorio/cenizas?${params}`)
-    } else if (section === 'nitrogeno') {
-      navigate(`/laboratorio/nitrogeno?${params}`)
+      // General solo necesita ciclo para mostrar la tabla filtrada
+      navigate(`/laboratorio/general?ciclo=${row.ciclo_id}`)
+    } else if (section === 'cenizas' || section === 'nitrogeno') {
+      // Nitrógeno y Cenizas reciben ciclo_id y buscan el lote de procesamiento
+      const path = section === 'cenizas' ? '/laboratorio/cenizas' : '/laboratorio/nitrogeno'
+      navigate(`${path}?ciclo=${row.ciclo_id}`)
     }
   }
   
@@ -166,6 +169,24 @@ export default function InformeResumen() {
     }
   }
   
+  // Eliminar nota
+  const handleDeleteNota = async (notaId) => {
+    if (!confirm('¿Estás seguro de eliminar esta nota?')) return
+    
+    try {
+      const response = await fetch(`${FASTAPI_BASE_URL}/notas-informe/${notaId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!response.ok) throw new Error('Error al eliminar nota')
+      
+      await fetchNotas() // Recargar notas
+    } catch (err) {
+      alert('Error al eliminar la nota: ' + err.message)
+    }
+  }
+  
   // Obtener notas para una fila
   const getNotasForRow = (row) => {
     const key = `${row.ciclo_id}-${row.etapa_id}-${row.muestra_id}-${row.origen_id}-${row.secuencia_id || 'null'}`
@@ -175,24 +196,75 @@ export default function InformeResumen() {
   const renderCell = (value) => (typeof value === 'number' ? value.toFixed(2) : (value ?? '-'));
   const formatDate = (dateString) => (!dateString ? '-' : new Date(dateString).toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' }));
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!exportableContentRef.current) return;
     setIsExporting(true);
-    html2canvas(exportableContentRef.current, { scale: 2 })
-      .then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        const imgX = (pdfWidth - imgWidth * ratio) / 2;
-        const imgY = (pdfHeight - imgHeight * ratio) / 2;
-        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-        pdf.save(`resumen_ciclo_${selectedCicloId}.pdf`);
-      })
-      .finally(() => setIsExporting(false));
+    
+    try {
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 40;
+      const contentWidth = pageWidth - (margin * 2);
+      
+      // ===== PÁGINA 1: TABLA =====
+      const tablaElement = exportableContentRef.current.querySelector('.overflow-x-auto');
+      if (tablaElement) {
+        const tablaCanvas = await html2canvas(tablaElement, { scale: 2, backgroundColor: '#ffffff' });
+        const tablaImgData = tablaCanvas.toDataURL('image/png');
+        const tablaImgWidth = contentWidth;
+        const tablaImgHeight = (tablaCanvas.height * tablaImgWidth) / tablaCanvas.width;
+        
+        // Título
+        pdf.setFontSize(16);
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`Resumen de Ciclo ${selectedCicloId}`, margin, margin);
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Fecha: ${new Date().toLocaleDateString('es-CO')}`, margin, margin + 20);
+        
+        // Tabla
+        pdf.addImage(tablaImgData, 'PNG', margin, margin + 40, tablaImgWidth, tablaImgHeight);
+      }
+      
+      // ===== GRÁFICOS: 3 POR PÁGINA =====
+      const graficos = exportableContentRef.current.querySelectorAll('.p-5.border.border-gray-200.rounded-xl.bg-white.shadow-sm');
+      const graficosPerPage = 3;
+      const graficoHeight = (pageHeight - (margin * 2) - 40) / graficosPerPage; // Espacio para 3 gráficos + separación
+      
+      for (let i = 0; i < graficos.length; i++) {
+        // Nueva página cada 3 gráficos
+        if (i % graficosPerPage === 0) {
+          pdf.addPage();
+        }
+        
+        const graficoCanvas = await html2canvas(graficos[i], { 
+          scale: 1.5, 
+          backgroundColor: '#ffffff',
+          logging: false 
+        });
+        
+        const graficoImgData = graficoCanvas.toDataURL('image/png');
+        const graficoImgWidth = contentWidth;
+        const calculatedHeight = (graficoCanvas.height * graficoImgWidth) / graficoCanvas.width;
+        
+        // Ajustar altura si es muy grande
+        const finalHeight = Math.min(calculatedHeight, graficoHeight - 10);
+        
+        // Posición Y según el índice dentro de la página
+        const positionInPage = i % graficosPerPage;
+        const yPosition = margin + (positionInPage * graficoHeight);
+        
+        pdf.addImage(graficoImgData, 'PNG', margin, yPosition, graficoImgWidth, finalHeight);
+      }
+      
+      pdf.save(`resumen_ciclo_${selectedCicloId}.pdf`);
+    } catch (error) {
+      console.error('Error al exportar PDF:', error);
+      alert('Error al generar el PDF. Por favor intenta de nuevo.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -480,14 +552,29 @@ export default function InformeResumen() {
               {currentNotaRow && getNotasForRow(currentNotaRow).length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-gray-600 uppercase">Notas anteriores:</p>
-                  {getNotasForRow(currentNotaRow).map((nota) => (
-                    <div key={nota.id} className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm">
-                      <p className="text-gray-800">{nota.nota}</p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Por {nota.usuario_nombre || nota.usuario_email} - {new Date(nota.created_at).toLocaleString('es-CO')}
-                      </p>
-                    </div>
-                  ))}
+                  {getNotasForRow(currentNotaRow).map((nota) => {
+                    const userEmail = localStorage.getItem('email');
+                    const userRole = localStorage.getItem('role');
+                    const canDelete = nota.usuario_email === userEmail || userRole === 'admin';
+                    
+                    return (
+                      <div key={nota.id} className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg text-sm relative">
+                        <p className="text-gray-800 pr-8">{nota.nota}</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Por {nota.usuario_nombre || nota.usuario_email} - {new Date(nota.created_at).toLocaleString('es-CO')}
+                        </p>
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteNota(nota.id)}
+                            className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
+                            title="Eliminar nota"
+                          >
+                            <FiX size={16} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

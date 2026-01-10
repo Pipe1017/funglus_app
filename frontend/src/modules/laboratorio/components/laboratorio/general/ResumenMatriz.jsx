@@ -8,7 +8,7 @@ const DATOS_LABORATORIO_CICLO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/cicl
 const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos`;
 const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/entry`;
 
-function ResumenMatriz({ onEditClick }) {
+function ResumenMatriz({ onEditClick, initialCicloId }) {
   const [availableCiclos, setAvailableCiclos] = useState([]);
   const [selectedCicloId, setSelectedCicloId] = useState('');
   const [datosMatriz, setDatosMatriz] = useState([]);
@@ -19,6 +19,13 @@ function ResumenMatriz({ onEditClick }) {
     fetch(`${CATALOGO_CICLOS_ENDPOINT}/?limit=100`)
       .then(res => res.json()).then(data => setAvailableCiclos(data || [])).catch(err => console.error(err));
   }, []);
+  
+  // Auto-seleccionar ciclo si viene de URL
+  useEffect(() => {
+    if (initialCicloId && !selectedCicloId) {
+      setSelectedCicloId(initialCicloId.toString());
+    }
+  }, [initialCicloId, selectedCicloId]);
 
   const fetchData = useCallback(async () => {
     if (!selectedCicloId) { setDatosMatriz([]); return; }
@@ -94,13 +101,15 @@ function ResumenMatriz({ onEditClick }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {datosMatriz.map((row) => (
-                            <tr key={row.id} className="hover:bg-blue-50/30 transition-colors group">
+                        {datosMatriz.map((row) => {
+                            const isHighlighted = initialCicloId && row.ciclo_id === initialCicloId;
+                            return (
+                            <tr key={row.id} className={`transition-colors group ${isHighlighted ? 'bg-yellow-100 hover:bg-yellow-200' : 'hover:bg-blue-50/30'}`}>
                                 {/* Celdas Fijas */}
-                                <td className="sticky left-0 z-20 bg-white group-hover:bg-blue-50 px-3 py-1.5 border-r border-gray-100 font-medium text-gray-800 truncate max-w-[100px]" title={row.etapa_ref?.nombre}>{row.etapa_ref?.nombre}</td>
-                                <td className="sticky left-[100px] z-20 bg-white group-hover:bg-blue-50 px-3 py-1.5 border-r border-gray-100 text-gray-600 truncate max-w-[100px]" title={row.muestra_ref?.nombre}>{row.muestra_ref?.nombre}</td>
-                                <td className="sticky left-[200px] z-20 bg-white group-hover:bg-blue-50 px-3 py-1.5 border-r border-gray-100 text-gray-500 truncate max-w-[80px]" title={row.origen_ref?.nombre}>{row.origen_ref?.nombre}</td>
-                                <td className="sticky left-[280px] z-20 bg-white group-hover:bg-blue-50 px-3 py-1.5 border-r border-gray-200 text-gray-500 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">{row.secuencia_ref?.nombre}</td>
+                                <td className={`sticky left-0 z-20 ${isHighlighted ? 'bg-yellow-100 group-hover:bg-yellow-200' : 'bg-white group-hover:bg-blue-50'} px-3 py-1.5 border-r border-gray-100 font-medium text-gray-800 truncate max-w-[100px]`} title={row.etapa_ref?.nombre}>{row.etapa_ref?.nombre}</td>
+                                <td className={`sticky left-[100px] z-20 ${isHighlighted ? 'bg-yellow-100 group-hover:bg-yellow-200' : 'bg-white group-hover:bg-blue-50'} px-3 py-1.5 border-r border-gray-100 text-gray-600 truncate max-w-[100px]`} title={row.muestra_ref?.nombre}>{row.muestra_ref?.nombre}</td>
+                                <td className={`sticky left-[200px] z-20 ${isHighlighted ? 'bg-yellow-100 group-hover:bg-yellow-200' : 'bg-white group-hover:bg-blue-50'} px-3 py-1.5 border-r border-gray-100 text-gray-500 truncate max-w-[80px]`} title={row.origen_ref?.nombre}>{row.origen_ref?.nombre}</td>
+                                <td className={`sticky left-[280px] z-20 ${isHighlighted ? 'bg-yellow-100 group-hover:bg-yellow-200' : 'bg-white group-hover:bg-blue-50'} px-3 py-1.5 border-r border-gray-200 text-gray-500 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]`}>{row.secuencia_ref?.nombre}</td>
 
                                 {/* Resultados */}
                                 <td className="px-2 py-1.5 text-right font-medium text-blue-600 bg-blue-50/10">{row.humedad_prom_porc?.toFixed(1) || '-'}</td>
@@ -122,7 +131,8 @@ function ResumenMatriz({ onEditClick }) {
                                     </div>
                                 </td>
                             </tr>
-                        ))}
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

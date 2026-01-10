@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   FiClipboard, FiFilter, FiInfo, FiLayers, FiList,
   FiPlusSquare, FiRefreshCw, FiSave, FiEdit, FiTrash2, FiXCircle, FiCheckSquare
@@ -19,6 +20,7 @@ const initialRegistroCenizasFormState = {
 }
 
 function CenizasSection() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [ciclosProcesamientoCenizas, setCiclosProcesamientoCenizas] = useState([]);
   const [selectedCicloProcesamientoId, setSelectedCicloProcesamientoId] = useState('');
   const [isLoadingCiclosProc, setIsLoadingCiclosProc] = useState(false);
@@ -66,6 +68,24 @@ function CenizasSection() {
   }, [selectedCicloProcesamientoId]);
 
   useEffect(() => { fetchCiclosProcesamientoCenizas(); }, [fetchCiclosProcesamientoCenizas]);
+  
+  // Leer parámetro ciclo_id de URL y seleccionar lote automáticamente
+  useEffect(() => {
+    const cicloParam = searchParams.get('ciclo');
+    if (cicloParam && ciclosProcesamientoCenizas.length > 0) {
+      // Buscar un registro de cenizas que tenga este ciclo_catalogo_id
+      fetch(`${REGISTROS_CENIZAS_ENDPOINT}/?ciclo_catalogo_id=${cicloParam}&limit=1`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0 && data[0].ciclo_procesamiento_id) {
+            setSelectedCicloProcesamientoId(data[0].ciclo_procesamiento_id.toString());
+          }
+        })
+        .catch(err => console.error('Error buscando lote:', err));
+      
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams, ciclosProcesamientoCenizas]);
   
   useEffect(() => {
     fetchRegistrosCenizasDelLote();
