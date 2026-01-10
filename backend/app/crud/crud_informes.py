@@ -72,6 +72,10 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
     # Consulta principal que agrupa y calcula promedios
     query_results = (
         db.query(
+            models.DatosGeneralesLaboratorio.ciclo_id,
+            models.DatosGeneralesLaboratorio.etapa_id,
+            models.DatosGeneralesLaboratorio.muestra_id,
+            models.DatosGeneralesLaboratorio.origen_id,
             models.Etapa.nombre.label("etapa_nombre"),
             models.Muestra.nombre.label("muestra_nombre"),
             models.Origen.nombre.label("origen_nombre"),
@@ -103,6 +107,7 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
         )
         .filter(models.DatosGeneralesLaboratorio.ciclo_id == ciclo_id)
         .group_by(
+            models.DatosGeneralesLaboratorio.ciclo_id,
             models.DatosGeneralesLaboratorio.etapa_id,
             models.DatosGeneralesLaboratorio.muestra_id,
             models.DatosGeneralesLaboratorio.origen_id,
@@ -127,6 +132,11 @@ def get_informe_resumen_by_ciclo(db: Session, ciclo_id: int) -> List[informe_sch
         is_average = count > 1
 
         informe_row = informe_schemas.InformeResumenRow(
+            ciclo_id=row.ciclo_id,
+            etapa_id=row.etapa_id,
+            muestra_id=row.muestra_id,
+            origen_id=row.origen_id,
+            secuencia_id=None,  # Para promedios no hay secuencia específica
             etapa_nombre=row.etapa_nombre,
             muestra_nombre=row.muestra_nombre,
             origen_nombre=row.origen_nombre,

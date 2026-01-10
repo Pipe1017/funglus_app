@@ -11,7 +11,8 @@ from app.routers import (
     datos_generales_router,
     registros_nitrogeno_router,
     registros_cenizas_router,
-    informes_router
+    informes_router,
+    notas_informe_router,
 )
 
 api_router = APIRouter()
@@ -30,3 +31,4 @@ api_router.include_router(ciclos_procesamiento_router.router, tags=["Laboratorio
 api_router.include_router(registros_nitrogeno_router.router, tags=["Laboratorio - Nitrógeno"])
 api_router.include_router(registros_cenizas_router.router, tags=["Laboratorio - Cenizas"])
 api_router.include_router(informes_router.router, tags=["Laboratorio - Informes"])
+api_router.include_router(notas_informe_router.router,prefix="/notas-informe",tags=["notas"])

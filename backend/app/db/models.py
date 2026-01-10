@@ -395,3 +395,37 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     allowed_modules = Column(JSON, default=["laboratorio"])  # NUEVO CAMPO
     created_at = Column(DateTime, server_default=func.now())
+
+
+class NotaInforme(Base):
+    """Notas y comentarios sobre registros específicos del informe"""
+    __tablename__ = "notas_informe"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Identificadores del registro (combinación de catálogos)
+    ciclo_id = Column(Integer, ForeignKey("catalogo_ciclos.id"), nullable=False, index=True)
+    etapa_id = Column(Integer, ForeignKey("catalogo_etapas.id"), nullable=False, index=True)
+    muestra_id = Column(Integer, ForeignKey("catalogo_muestras.id"), nullable=False, index=True)
+    origen_id = Column(Integer, ForeignKey("catalogo_origenes.id"), nullable=False, index=True)
+    secuencia_id = Column(Integer, ForeignKey("catalogo_secuencias.id"), nullable=True, index=True)
+    
+    # Contenido de la nota
+    nota = Column(String, nullable=False)
+    usuario_email = Column(String, nullable=False, index=True)
+    usuario_nombre = Column(String, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Relaciones opcionales para facilitar consultas
+    ciclo_ref = relationship("Ciclo")
+    etapa_ref = relationship("Etapa")
+    muestra_ref = relationship("Muestra")
+    origen_ref = relationship("Origen")
+    secuencia_ref = relationship("Secuencia")
+    
+    __table_args__ = (
+        {"comment": "Notas y comentarios de usuarios sobre registros específicos del informe"}
+    )

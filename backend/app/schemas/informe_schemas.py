@@ -4,6 +4,11 @@ from pydantic import BaseModel
 from datetime import date
 
 class InformeResumenRow(BaseModel):
+    ciclo_id: int
+    etapa_id: int
+    muestra_id: int
+    origen_id: int
+    secuencia_id: Optional[int] = None
     etapa_nombre: str
     muestra_nombre: str
     origen_nombre: str
