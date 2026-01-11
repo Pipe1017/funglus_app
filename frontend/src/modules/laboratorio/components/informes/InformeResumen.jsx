@@ -83,13 +83,15 @@ export default function InformeResumen() {
   const handleCellClick = (section, row) => {
     if (!canEditLaboratorio) return
     
+    // Construimos los parámetros comunes para identificar la fila exacta
+    const commonParams = `ciclo=${row.ciclo_id}&etapa=${row.etapa_id}&muestra=${row.muestra_id}&origen=${row.origen_id}`;
+
     if (section === 'general') {
-      // MODIFICADO: Ahora envía también etapa, muestra y origen para el resaltado específico
-      navigate(`/laboratorio/general?ciclo=${row.ciclo_id}&etapa=${row.etapa_id}&muestra=${row.muestra_id}&origen=${row.origen_id}`)
+      navigate(`/laboratorio/general?${commonParams}`)
     } else if (section === 'cenizas' || section === 'nitrogeno') {
-      // Nitrógeno y Cenizas reciben ciclo_id y buscan el lote de procesamiento
       const path = section === 'cenizas' ? '/laboratorio/cenizas' : '/laboratorio/nitrogeno'
-      navigate(`${path}?ciclo=${row.ciclo_id}`)
+      // MODIFICADO: Ahora enviamos todos los parámetros también para Cenizas y Nitrógeno
+      navigate(`${path}?${commonParams}`)
     }
   }
   

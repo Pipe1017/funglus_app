@@ -1,3 +1,4 @@
+// Ubicación: frontend/src/modules/laboratorio/pages/laboratorio_main_sections/CenizasSection.jsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -33,6 +34,9 @@ function CenizasSection() {
   const [errorLoadingRegistros, setErrorLoadingRegistros] = useState('');
   const [editingRecordId, setEditingRecordId] = useState(null);
   const [resyncStatus, setResyncStatus] = useState({ isLoading: false, error: '', success: '' });
+
+  // NUEVO: Estado para parámetros de resaltado
+  const [highlightParams, setHighlightParams] = useState(null);
 
   const fetchCiclosProcesamientoCenizas = useCallback(async () => {
     setIsLoadingCiclosProc(true);
@@ -72,8 +76,25 @@ function CenizasSection() {
   // Leer parámetro ciclo_id de URL y seleccionar lote automáticamente
   useEffect(() => {
     const cicloParam = searchParams.get('ciclo');
+    const etapaParam = searchParams.get('etapa');
+    const muestraParam = searchParams.get('muestra');
+    const origenParam = searchParams.get('origen');
+
     if (cicloParam && ciclosProcesamientoCenizas.length > 0) {
-      // Buscar un registro de cenizas que tenga este ciclo_catalogo_id
+      
+      // Guardar parámetros de resaltado ANTES de limpiar la URL
+      if (etapaParam && muestraParam && origenParam) {
+        setHighlightParams({
+            ciclo_id: parseInt(cicloParam),
+            etapa_id: parseInt(etapaParam),
+            muestra_id: parseInt(muestraParam),
+            origen_id: parseInt(origenParam)
+        });
+      } else {
+        setHighlightParams(null);
+      }
+
+      // Buscar un registro de cenizas que tenga este ciclo_catalogo_id para encontrar el Lote
       fetch(`${REGISTROS_CENIZAS_ENDPOINT}/?ciclo_catalogo_id=${cicloParam}&limit=1`)
         .then(res => res.json())
         .then(data => {
@@ -87,6 +108,28 @@ function CenizasSection() {
     }
   }, [searchParams, setSearchParams, ciclosProcesamientoCenizas]);
   
+  // Efecto para hacer SCROLL al registro resaltado una vez carguen los datos
+  useEffect(() => {
+    if (highlightParams && listaRegistrosCenizas.length > 0) {
+      const match = listaRegistrosCenizas.find(r => 
+        r.ciclo_catalogo_id === highlightParams.ciclo_id &&
+        r.etapa_catalogo_id === highlightParams.etapa_id &&
+        r.muestra_catalogo_id === highlightParams.muestra_id &&
+        r.origen_catalogo_id === highlightParams.origen_id
+      );
+
+      if (match) {
+        // Pequeño timeout para asegurar renderizado
+        setTimeout(() => {
+          const element = document.getElementById(`registro-ceniza-${match.id}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+      }
+    }
+  }, [listaRegistrosCenizas, highlightParams]);
+
   useEffect(() => {
     fetchRegistrosCenizasDelLote();
   }, [selectedCicloProcesamientoId]);
@@ -274,6 +317,7 @@ function CenizasSection() {
             value={selectedCicloProcesamientoId}
             onChange={(e) => {
               setSelectedCicloProcesamientoId(e.target.value);
+              setHighlightParams(null); // Limpiar resaltado si cambia manualmente
               resetFormAndExitEditing();
             }}
             className="mt-1 block w-full lg:w-1/2 px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -370,17 +414,35 @@ function CenizasSection() {
                 {!isLoadingRegistros && !errorLoadingRegistros && listaRegistrosCenizas.length === 0 && (
                   <tr><td colSpan={registrosTableColumns.length} className="text-center p-4 text-gray-500">No hay registros para este lote.</td></tr>
                 )}
-                {!isLoadingRegistros && !errorLoadingRegistros && listaRegistrosCenizas.map(registro => (
-                  <tr key={registro.id} className="hover:bg-gray-50">
-                    {registrosTableColumns.map(col => (
-                      <td key={`${registro.id}-${col.Header}`} className="px-3 py-2 whitespace-nowrap">
-                        {col.accessor === 'actions' 
-                          ? col.Cell({ row: registro }) 
-                          : col.accessor(registro)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {!isLoadingRegistros && !errorLoadingRegistros && listaRegistrosCenizas.map(registro => {
+                  // Lógica de resaltado
+                  const isHighlighted = highlightParams && 
+                      registro.ciclo_catalogo_id === highlightParams.ciclo_id &&
+                      registro.etapa_catalogo_id === highlightParams.etapa_id &&
+                      registro.muestra_catalogo_id === highlightParams.muestra_id &&
+                      registro.origen_catalogo_id === highlightParams.origen_id;
+
+                  return (
+                    <tr 
+                      key={registro.id} 
+                      id={`registro-ceniza-${registro.id}`} // ID para scroll
+                      className={`
+                        transition-colors duration-500 border-l-4
+                        ${isHighlighted 
+                          ? 'bg-yellow-100 border-l-yellow-500 shadow-md scale-[1.01]' 
+                          : 'hover:bg-gray-50 border-l-transparent'}
+                      `}
+                    >
+                      {registrosTableColumns.map(col => (
+                        <td key={`${registro.id}-${col.Header}`} className="px-3 py-2 whitespace-nowrap">
+                          {col.accessor === 'actions' 
+                            ? col.Cell({ row: registro }) 
+                            : col.accessor(registro)}
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

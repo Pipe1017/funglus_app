@@ -42,6 +42,9 @@ export default function NitrogenoSection() {
   const [averagingStatus, setAveragingStatus] = useState({ isLoading: false, error: '', success: '', details: [] });
   const [editingRecordId, setEditingRecordId] = useState(null);
 
+  // NUEVO: Estado para parámetros de resaltado
+  const [highlightParams, setHighlightParams] = useState(null);
+
   // --- 1. Cargar Ciclos ---
   const fetchCiclosProcesamiento = useCallback(async () => {
     setIsLoadingCiclosProc(true);
@@ -60,8 +63,25 @@ export default function NitrogenoSection() {
   // Leer parámetro ciclo_id de URL y seleccionar lote automáticamente
   useEffect(() => {
     const cicloParam = searchParams.get('ciclo');
+    const etapaParam = searchParams.get('etapa');
+    const muestraParam = searchParams.get('muestra');
+    const origenParam = searchParams.get('origen');
+
     if (cicloParam && ciclosProcesamientoNitrogeno.length > 0) {
-      // Buscar un registro de nitrógeno que tenga este ciclo_catalogo_id
+      
+      // Guardar parámetros de resaltado ANTES de limpiar la URL
+      if (etapaParam && muestraParam && origenParam) {
+        setHighlightParams({
+            ciclo_id: parseInt(cicloParam),
+            etapa_id: parseInt(etapaParam),
+            muestra_id: parseInt(muestraParam),
+            origen_id: parseInt(origenParam)
+        });
+      } else {
+        setHighlightParams(null);
+      }
+
+      // Buscar un registro de nitrógeno que tenga este ciclo_catalogo_id para encontrar el Lote
       fetch(`${REGISTROS_NITROGENO_ENDPOINT}/?ciclo_catalogo_id=${cicloParam}&limit=1`)
         .then(res => res.json())
         .then(data => {
@@ -74,6 +94,27 @@ export default function NitrogenoSection() {
       setSearchParams({}); // Limpiar URL
     }
   }, [searchParams, setSearchParams, ciclosProcesamientoNitrogeno]);
+
+  // Efecto para hacer SCROLL al registro resaltado
+  useEffect(() => {
+    if (highlightParams && listaRegistros.length > 0) {
+      const match = listaRegistros.find(r => 
+        r.ciclo_catalogo_id === highlightParams.ciclo_id &&
+        r.etapa_catalogo_id === highlightParams.etapa_id &&
+        r.muestra_catalogo_id === highlightParams.muestra_id &&
+        r.origen_catalogo_id === highlightParams.origen_id
+      );
+
+      if (match) {
+        setTimeout(() => {
+          const element = document.getElementById(`registro-nitro-${match.id}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 300);
+      }
+    }
+  }, [listaRegistros, highlightParams]);
 
   // --- 2. Cargar Registros ---
   const fetchRegistros = useCallback(async (cicloId) => {
@@ -272,7 +313,11 @@ export default function NitrogenoSection() {
         <div className="flex items-center gap-2">
           <select 
             value={selectedCicloProcesamientoId} 
-            onChange={(e) => { setSelectedCicloProcesamientoId(e.target.value); resetFormAndExitEditing(); }}
+            onChange={(e) => { 
+                setSelectedCicloProcesamientoId(e.target.value); 
+                setHighlightParams(null); // Limpiar resaltado
+                resetFormAndExitEditing(); 
+            }}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-brand-500 focus:border-brand-500"
           >
             <option value="">-- Seleccionar Lote --</option>
@@ -375,22 +420,40 @@ export default function NitrogenoSection() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {listaRegistros.map(reg => (
-                            <tr key={reg.id} className="hover:bg-gray-50">
-                                <td className="px-2 py-1.5 text-gray-500">{reg.id}</td>
-                                <td className="px-2 py-1.5 font-medium text-gray-800">{reg.muestra_ref?.nombre}</td>
-                                <td className="px-2 py-1.5 text-gray-600">{reg.origen_ref?.nombre}</td>
-                                <td className="px-2 py-1.5 text-right">{reg.peso_muestra_n_g}</td>
-                                <td className="px-2 py-1.5 text-right">{reg.n_hcl_normalidad}</td>
-                                <td className="px-2 py-1.5 text-right">{reg.vol_hcl_gastado_cm3}</td>
-                                <td className="px-2 py-1.5 text-right font-bold text-blue-600 bg-blue-50/30 border-l border-gray-100">{reg.nitrogeno_organico_total_porc?.toFixed(3)}</td>
-                                <td className="px-2 py-1.5 text-right font-bold text-green-600 bg-green-50/30">{reg.nitrogeno_base_seca_porc?.toFixed(3)}</td>
-                                <td className="px-2 py-1.5 text-center flex justify-center gap-1">
-                                    <button onClick={() => handleEditRegistro(reg)} className="text-blue-500 hover:text-blue-700 p-1"><FiEdit /></button>
-                                    <button onClick={() => handleDeleteRegistro(reg.id)} className="text-red-500 hover:text-red-700 p-1"><FiTrash2 /></button>
-                                </td>
-                            </tr>
-                        ))}
+                        {listaRegistros.map(reg => {
+                            // Lógica de resaltado
+                            const isHighlighted = highlightParams && 
+                                reg.ciclo_catalogo_id === highlightParams.ciclo_id &&
+                                reg.etapa_catalogo_id === highlightParams.etapa_id &&
+                                reg.muestra_catalogo_id === highlightParams.muestra_id &&
+                                reg.origen_catalogo_id === highlightParams.origen_id;
+
+                            return (
+                                <tr 
+                                    key={reg.id} 
+                                    id={`registro-nitro-${reg.id}`} // ID para scroll
+                                    className={`
+                                        transition-colors duration-500 
+                                        ${isHighlighted 
+                                            ? 'bg-yellow-100 border-l-4 border-l-yellow-500 shadow-md' 
+                                            : 'hover:bg-gray-50 border-l-4 border-l-transparent'}
+                                    `}
+                                >
+                                    <td className="px-2 py-1.5 text-gray-500">{reg.id}</td>
+                                    <td className="px-2 py-1.5 font-medium text-gray-800">{reg.muestra_ref?.nombre}</td>
+                                    <td className="px-2 py-1.5 text-gray-600">{reg.origen_ref?.nombre}</td>
+                                    <td className="px-2 py-1.5 text-right">{reg.peso_muestra_n_g}</td>
+                                    <td className="px-2 py-1.5 text-right">{reg.n_hcl_normalidad}</td>
+                                    <td className="px-2 py-1.5 text-right">{reg.vol_hcl_gastado_cm3}</td>
+                                    <td className="px-2 py-1.5 text-right font-bold text-blue-600 bg-blue-50/30 border-l border-gray-100">{reg.nitrogeno_organico_total_porc?.toFixed(3)}</td>
+                                    <td className="px-2 py-1.5 text-right font-bold text-green-600 bg-green-50/30">{reg.nitrogeno_base_seca_porc?.toFixed(3)}</td>
+                                    <td className="px-2 py-1.5 text-center flex justify-center gap-1">
+                                        <button onClick={() => handleEditRegistro(reg)} className="text-blue-500 hover:text-blue-700 p-1"><FiEdit /></button>
+                                        <button onClick={() => handleDeleteRegistro(reg.id)} className="text-red-500 hover:text-red-700 p-1"><FiTrash2 /></button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
              </div>
