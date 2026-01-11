@@ -24,7 +24,7 @@ function MainLayout() {
   const pathSegment = location.pathname.split('/')[1]
   
   // Rutas que pertenecen al módulo Laboratorio
-  const laboratorioRoutes = ['laboratorio', 'gestion-ciclos', 'formulacion', 'gestion-catalogos', 'informes']
+  const laboratorioRoutes = ['laboratorio', 'gestion-ciclos', 'formulacion', 'gestion-catalogos']
   const currentModule = laboratorioRoutes.includes(pathSegment) ? 'laboratorio' : pathSegment
 
   // Clases para los links del sidebar
@@ -63,14 +63,82 @@ function MainLayout() {
     )
   })
 
-  // Renderizar opciones del sidebar según el módulo actual
+  // ========== FUNCIÓN CORREGIDA DEL SIDEBAR ==========
   const renderSidebarOptions = () => {
-    if (currentModule === 'laboratorio') {
+    // CASO ESPECIAL: Módulo Informes - SOLO opciones de informes
+    if (currentModule === 'informes') {
       return (
         <>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
-            Laboratorio
+            {!sidebarCollapsed && 'Informes'}
           </div>
+          <NavLink to="/informes" className={() => navLinkClass('/informes')}>
+            <CiFileOn className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Ver Informes'}
+          </NavLink>
+        </>
+      )
+    }
+    
+    // Módulo Laboratorio - con subsecciones
+    if (currentModule === 'laboratorio') {
+      const isInLaboratorioSection = location.pathname.startsWith('/laboratorio')
+      
+      return (
+        <>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
+            {!sidebarCollapsed && 'Laboratorio'}
+          </div>
+          
+          {/* Botón principal del módulo Laboratorio */}
+          <NavLink to="/laboratorio/general" className={() => navLinkClass('/laboratorio')}>
+            <CiBeaker1 className="mr-3 h-6 w-6 flex-shrink-0" /> 
+            {!sidebarCollapsed && 'Módulo Laboratorio'}
+          </NavLink>
+          
+          {/* Subsecciones (General, Nitrógeno, Cenizas) - Solo visibles dentro de /laboratorio */}
+          {isInLaboratorioSection && !sidebarCollapsed && (
+            <div className="ml-6 space-y-1 border-l-2 border-gray-700 pl-2 mb-2">
+              <NavLink 
+                to="/laboratorio/general" 
+                className={({ isActive }) => 
+                  `flex items-center px-3 py-2 text-xs rounded-md transition-colors ${
+                    isActive 
+                      ? 'bg-gray-700 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  }`
+                }
+              >
+                General
+              </NavLink>
+              <NavLink 
+                to="/laboratorio/nitrogeno" 
+                className={({ isActive }) => 
+                  `flex items-center px-3 py-2 text-xs rounded-md transition-colors ${
+                    isActive 
+                      ? 'bg-gray-700 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  }`
+                }
+              >
+                Nitrógeno
+              </NavLink>
+              <NavLink 
+                to="/laboratorio/cenizas" 
+                className={({ isActive }) => 
+                  `flex items-center px-3 py-2 text-xs rounded-md transition-colors ${
+                    isActive 
+                      ? 'bg-gray-700 text-white' 
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  }`
+                }
+              >
+                Cenizas
+              </NavLink>
+            </div>
+          )}
+          
+          {/* Otras opciones de Laboratorio */}
           <NavLink to="/gestion-ciclos" className={() => navLinkClass('/gestion-ciclos')}>
             <CiRepeat className="mr-3 h-6 w-6 flex-shrink-0" /> 
             {!sidebarCollapsed && 'Gestión de Ciclos'}
@@ -89,7 +157,10 @@ function MainLayout() {
           </NavLink>
         </>
       )
-    } else if (currentModule === 'siembra') {
+    }
+    
+    // Módulo Siembra
+    if (currentModule === 'siembra') {
       return (
         <>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
@@ -100,7 +171,10 @@ function MainLayout() {
           </div>
         </>
       )
-    } else if (currentModule === 'incubacion') {
+    }
+    
+    // Módulo Incubación
+    if (currentModule === 'incubacion') {
       return (
         <>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-4">
@@ -112,6 +186,7 @@ function MainLayout() {
         </>
       )
     }
+    
     return null
   }
 
@@ -196,7 +271,7 @@ function MainLayout() {
           )}
         </div>
 
-        {/* Botón para colapsar/expandir - Al final del sidebar */}
+        {/* Botón para colapsar/expandir */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="w-full py-3 bg-gray-900 hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-300"

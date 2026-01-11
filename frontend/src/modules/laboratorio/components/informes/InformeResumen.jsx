@@ -27,6 +27,11 @@ export default function InformeResumen() {
   const [notaText, setNotaText] = useState('')
   const [isSavingNota, setIsSavingNota] = useState(false)
   
+  // ===== NUEVOS ESTADOS PARA EXPORTACIÓN A EXCEL =====
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [showExcelOptions, setShowExcelOptions] = useState(false);
+  const [selectedCiclosForExcel, setSelectedCiclosForExcel] = useState([]);
+  
   // Verificar permisos
   const allowedModules = JSON.parse(localStorage.getItem('allowed_modules') || '[]')
   const canEditLaboratorio = allowedModules.includes('laboratorio')
@@ -269,6 +274,69 @@ export default function InformeResumen() {
     }
   };
 
+  // ===== NUEVA FUNCIÓN PARA EXPORTACIÓN A EXCEL =====
+  const handleExportExcel = async () => {
+    if (!selectedCicloId) {
+      alert('Debes seleccionar un ciclo primero');
+      return;
+    }
+
+    setIsExportingExcel(true);
+    try {
+      let url = `${FASTAPI_BASE_URL}/informes/resumen/export/excel/${selectedCicloId}`;
+      
+      if (selectedCiclosForExcel.length > 0) {
+        const ciclosAdicionales = selectedCiclosForExcel.join(',');
+        url += `?ciclos_adicionales=${ciclosAdicionales}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al exportar a Excel');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filename = contentDisposition 
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `informe_resumen_${selectedCicloId}_${Date.now()}.xlsx`;
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      setShowExcelOptions(false);
+      setSelectedCiclosForExcel([]);
+    } catch (err) {
+      console.error('Error al exportar:', err);
+      alert('Error al exportar a Excel. Por favor intenta nuevamente.');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  const toggleCicloForExcel = (cicloId) => {
+    setSelectedCiclosForExcel(prev => {
+      if (prev.includes(cicloId)) {
+        return prev.filter(id => id !== cicloId);
+      } else {
+        return [...prev, cicloId];
+      }
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Header de Selección */}
@@ -294,14 +362,100 @@ export default function InformeResumen() {
                     </button>
                 </div>
             </div>
-            <button 
-              onClick={handleExport} 
-              disabled={isExporting || !selectedCicloId || informeData.length === 0}
-              className="w-full md:w-auto px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
-            >
-              <FiDownload />
-              {isExporting ? 'Exportando...' : 'Descargar PDF'}
-            </button>
+            
+            {/* ===== BOTONES DE EXPORTACIÓN - EXCEL + PDF ===== */}
+            <div className="flex gap-2">
+              {/* Botón Excel con dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowExcelOptions(!showExcelOptions)}
+                  disabled={!selectedCicloId || informeData.length === 0}
+                  className="px-4 py-2.5 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <FiDownload />
+                  Exportar Excel
+                </button>
+                
+                {/* Dropdown de opciones de Excel */}
+                {showExcelOptions && (
+                  <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-[300px] p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-bold text-gray-700">Opciones de Exportación</h4>
+                      <button 
+                        onClick={() => setShowExcelOptions(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <FiX size={18} />
+                      </button>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {/* Ciclo actual seleccionado */}
+                      <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                        <p className="text-xs text-blue-700 font-medium">
+                          Ciclo actual: {ciclos.find(c => c.id === parseInt(selectedCicloId))?.nombre_ciclo}
+                        </p>
+                      </div>
+                      
+                      {/* Opción de ciclos adicionales */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 mb-2">
+                          Agregar ciclos adicionales (opcional):
+                        </p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 border border-gray-200 rounded p-2">
+                          {ciclos
+                            .filter(c => c.id !== parseInt(selectedCicloId))
+                            .map(ciclo => (
+                              <label 
+                                key={ciclo.id} 
+                                className="flex items-center gap-2 text-xs hover:bg-gray-50 p-1 rounded cursor-pointer"
+                              >
+                                <input 
+                                  type="checkbox"
+                                  checked={selectedCiclosForExcel.includes(ciclo.id)}
+                                  onChange={() => toggleCicloForExcel(ciclo.id)}
+                                  className="rounded text-green-600"
+                                />
+                                <span className="text-gray-700">{ciclo.nombre_ciclo}</span>
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                      
+                      {/* Botón de exportación final */}
+                      <button
+                        onClick={handleExportExcel}
+                        disabled={isExportingExcel}
+                        className="w-full px-4 py-2 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isExportingExcel ? (
+                          <>
+                            <FiRefreshCw className="animate-spin" />
+                            Exportando...
+                          </>
+                        ) : (
+                          <>
+                            <FiDownload />
+                            Generar Excel
+                            {selectedCiclosForExcel.length > 0 && ` (${selectedCiclosForExcel.length + 1} ciclos)`}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón PDF existente */}
+              <button 
+                onClick={handleExport} 
+                disabled={isExporting || !selectedCicloId || informeData.length === 0}
+                className="px-4 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+              >
+                <FiDownload />
+                {isExporting ? 'Exportando...' : 'Descargar PDF'}
+              </button>
+            </div>
         </div>
       </div>
 
