@@ -3,8 +3,14 @@ FROM node:20-alpine as build
 
 WORKDIR /app
 
+# 🔥 Recibir variable de entorno del docker-compose
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copiar package files
 COPY package*.json ./
+
+# Instalar dependencias
 RUN npm ci
 
 # Copiar código fuente

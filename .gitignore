@@ -69,3 +69,28 @@ backup_*.sql
 
 # PERMITIR init_data.sql (datos iniciales)
 !backend/init_data.sql
+
+
+
+# .gitignore (raíz del proyecto)
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Pero SÍ incluir plantillas
+# !.env.example
+
+# Frontend
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.production.local
+
+# Backend
+backend/.env
+backend/.env.local
+
+# Logs
+*.log
+npm-debug.log*

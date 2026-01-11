@@ -1,8 +1,10 @@
-// Detectar si estamos en desarrollo o producción
-// Para red local, usar la IP del servidor
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-                     (window.location.hostname === 'localhost' 
-                       ? 'http://localhost:8000/api/v1' 
-                       : `http://${window.location.hostname}:8000/api/v1`)
+// frontend/src/modules/core/config/api.js
+export const API_BASE_URL = import.meta.env.VITE_API_URL
 
-export { API_BASE_URL }
+export const config = {
+  apiUrl: API_BASE_URL,
+  appName: import.meta.env.VITE_APP_NAME || 'FunglusApp',
+  environment: import.meta.env.VITE_ENVIRONMENT || import.meta.env.MODE,
+}
+
+console.log('🔧 API URL:', API_BASE_URL)

@@ -1,11 +1,14 @@
 services:
+  # ═══════════════════════════════════════════════════════════
+  # 🗄️ DATABASE
+  # ═══════════════════════════════════════════════════════════
   db:
     image: postgres:15-alpine
     container_name: funglusapp_db
     environment:
-      POSTGRES_USER: funglusapp
-      POSTGRES_PASSWORD: funglusapp123
-      POSTGRES_DB: funglusapp
+      POSTGRES_USER: ${POSTGRES_USER:-funglusapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-funglusapp123}
+      POSTGRES_DB: ${POSTGRES_DB:-funglusapp_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init_data.sql:/docker-entrypoint-initdb.d/init.sql
@@ -14,21 +17,37 @@ services:
     networks:
       - funglusapp_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U funglusapp"]
+      test: ["CMD-SHELL", "pg_isready -U funglusapp -d funglusapp_db"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # ═══════════════════════════════════════════════════════════
+  # 🐍 BACKEND
+  # ═══════════════════════════════════════════════════════════
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: funglusapp_backend
     environment:
-      - DATABASE_URL=postgresql://funglusapp:funglusapp123@db:5432/funglusapp
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-CHANGE-IN-PRODUCTION}
-      - ENVIRONMENT=${ENVIRONMENT:-development}
-      - DEBUG=${DEBUG:-true}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://funglusapp:funglusapp123@db:5432/funglusapp_db}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-CHANGE-IN-PRODUCTION}
+      
+      # ┌──────────────────────────────────────────────────┐
+      # │ 🔧 CAMBIAR SEGÚN ENTORNO                         │
+      # └──────────────────────────────────────────────────┘
+      # 🏠 DESARROLLO (Mac M4 Pro)
+      ENVIRONMENT: development
+      DEBUG: "true"
+      
+      # ☁️  PRODUCCIÓN (Linux + Cloudflare) - descomentar y comentar lo de arriba
+      #ENVIRONMENT: production
+      #DEBUG: "false"
+      
+      # CORS - Permite todos los orígenes
+      BACKEND_CORS_ORIGINS: "http://localhost,http://localhost:80,http://localhost:5173,http://192.168.1.4,http://192.168.1.4:80,http://192.168.1.4:5173,https://funglus.bunnatek.com,https://funglus-api.bunnatek.com"
     ports:
       - "8000:8000"
     volumes:
@@ -40,10 +59,26 @@ services:
       - funglusapp_network
     restart: unless-stopped
 
+  # ═══════════════════════════════════════════════════════════
+  # ⚛️ FRONTEND
+  # ═══════════════════════════════════════════════════════════
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # ┌──────────────────────────────────────────────────┐
+        # │ 🔧 DESCOMENTAR SOLO UNA OPCIÓN                   │
+        # └──────────────────────────────────────────────────┘
+        # 🏠 LOCALHOST (Mac M4 Pro - desarrollo local)
+        - VITE_API_URL=http://localhost:8000/api/v1
+        
+        # 🌐 RED LOCAL (desde otros dispositivos en tu red)
+        #- VITE_API_URL=http://192.168.1.4:8000/api/v1
+        
+        # ☁️  CLOUDFLARE (producción)
+        #- VITE_API_URL=https://funglus-api.bunnatek.com/api/v1
+        
     container_name: funglusapp_frontend
     ports:
       - "80:80"
@@ -51,6 +86,23 @@ services:
       - backend
     networks:
       - funglusapp_network
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════
+  # ☁️ CLOUDFLARE TUNNEL (solo para producción)
+  # ═══════════════════════════════════════════════════════════
+  # Descomentar este bloque en producción Linux con Cloudflare
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: funglusapp_cloudflared
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    networks:
+      - funglusapp_network
+    depends_on:
+      - frontend
+      - backend
     restart: unless-stopped
 
 networks:
