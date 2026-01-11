@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict t1OnJpTdaKYcbf1chTxEPhjMMpZLzDrLFoshzuiYA8ZrOLiSEWqAsxsgdOasK1o
+\restrict jWQvkWk182hzSivYYjWB0Fq4eeiOHIBMz6rKUKLRdjIdnM4P7HkcScZ0WCrSxiC
 
 -- Dumped from database version 15.15
 -- Dumped by pg_dump version 15.15
@@ -18,102 +18,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_secuencia_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_origen_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_muestra_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_etapa_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_ciclo_procesamiento_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_ciclo_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_secuencia_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_origen_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_muestra_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_etapa_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_ciclo_procesamiento_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_ciclo_catalogo_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_secuencia_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_origen_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_muestra_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_etapa_id_fkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_ciclo_id_fkey;
-DROP INDEX IF EXISTS public.ix_users_id;
-DROP INDEX IF EXISTS public.ix_users_email;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_secuencia_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_origen_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_muestra_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_etapa_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_ciclo_procesamiento_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_nitrogeno_ciclo_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_secuencia_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_origen_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_muestra_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_etapa_catalogo_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_ciclo_procesamiento_id;
-DROP INDEX IF EXISTS public.ix_registros_analisis_cenizas_ciclo_catalogo_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_secuencia_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_origen_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_muestra_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_etapa_id;
-DROP INDEX IF EXISTS public.ix_datos_generales_laboratorio_ciclo_id;
-DROP INDEX IF EXISTS public.ix_ciclos_procesamiento_tipo_analisis;
-DROP INDEX IF EXISTS public.ix_ciclos_procesamiento_identificador_lote;
-DROP INDEX IF EXISTS public.ix_ciclos_procesamiento_id;
-DROP INDEX IF EXISTS public.ix_ciclos_procesamiento_fecha_hora_lote;
-DROP INDEX IF EXISTS public.ix_catalogo_secuencias_nombre;
-DROP INDEX IF EXISTS public.ix_catalogo_secuencias_id;
-DROP INDEX IF EXISTS public.ix_catalogo_origenes_nombre;
-DROP INDEX IF EXISTS public.ix_catalogo_origenes_id;
-DROP INDEX IF EXISTS public.ix_catalogo_muestras_nombre;
-DROP INDEX IF EXISTS public.ix_catalogo_muestras_id;
-DROP INDEX IF EXISTS public.ix_catalogo_etapas_nombre;
-DROP INDEX IF EXISTS public.ix_catalogo_etapas_id;
-DROP INDEX IF EXISTS public.ix_catalogo_ciclos_nombre_ciclo;
-DROP INDEX IF EXISTS public.ix_catalogo_ciclos_id;
-ALTER TABLE IF EXISTS ONLY public.users DROP CONSTRAINT IF EXISTS users_pkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_nitrogeno DROP CONSTRAINT IF EXISTS registros_analisis_nitrogeno_pkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS registros_analisis_cenizas_pkey;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS datos_generales_laboratorio_pkey;
-ALTER TABLE IF EXISTS ONLY public.ciclos_procesamiento DROP CONSTRAINT IF EXISTS ciclos_procesamiento_pkey;
-ALTER TABLE IF EXISTS ONLY public.catalogo_secuencias DROP CONSTRAINT IF EXISTS catalogo_secuencias_pkey;
-ALTER TABLE IF EXISTS ONLY public.catalogo_origenes DROP CONSTRAINT IF EXISTS catalogo_origenes_pkey;
-ALTER TABLE IF EXISTS ONLY public.catalogo_muestras DROP CONSTRAINT IF EXISTS catalogo_muestras_pkey;
-ALTER TABLE IF EXISTS ONLY public.catalogo_etapas DROP CONSTRAINT IF EXISTS catalogo_etapas_pkey;
-ALTER TABLE IF EXISTS ONLY public.catalogo_ciclos DROP CONSTRAINT IF EXISTS catalogo_ciclos_pkey;
-ALTER TABLE IF EXISTS ONLY public.registros_analisis_cenizas DROP CONSTRAINT IF EXISTS _registro_cenizas_lote_catalogo_uc;
-ALTER TABLE IF EXISTS ONLY public.datos_generales_laboratorio DROP CONSTRAINT IF EXISTS _datos_laboratorio_claves_uc;
-ALTER TABLE IF EXISTS ONLY public.ciclos_procesamiento DROP CONSTRAINT IF EXISTS _ciclo_proc_ident_fecha_tipo_uc;
-ALTER TABLE IF EXISTS public.users ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.registros_analisis_nitrogeno ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.registros_analisis_cenizas ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.datos_generales_laboratorio ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.ciclos_procesamiento ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.catalogo_secuencias ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.catalogo_origenes ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.catalogo_muestras ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.catalogo_etapas ALTER COLUMN id DROP DEFAULT;
-ALTER TABLE IF EXISTS public.catalogo_ciclos ALTER COLUMN id DROP DEFAULT;
-DROP SEQUENCE IF EXISTS public.users_id_seq;
-DROP TABLE IF EXISTS public.users;
-DROP SEQUENCE IF EXISTS public.registros_analisis_nitrogeno_id_seq;
-DROP TABLE IF EXISTS public.registros_analisis_nitrogeno;
-DROP SEQUENCE IF EXISTS public.registros_analisis_cenizas_id_seq;
-DROP TABLE IF EXISTS public.registros_analisis_cenizas;
-DROP SEQUENCE IF EXISTS public.datos_generales_laboratorio_id_seq;
-DROP TABLE IF EXISTS public.datos_generales_laboratorio;
-DROP SEQUENCE IF EXISTS public.ciclos_procesamiento_id_seq;
-DROP TABLE IF EXISTS public.ciclos_procesamiento;
-DROP SEQUENCE IF EXISTS public.catalogo_secuencias_id_seq;
-DROP TABLE IF EXISTS public.catalogo_secuencias;
-DROP SEQUENCE IF EXISTS public.catalogo_origenes_id_seq;
-DROP TABLE IF EXISTS public.catalogo_origenes;
-DROP SEQUENCE IF EXISTS public.catalogo_muestras_id_seq;
-DROP TABLE IF EXISTS public.catalogo_muestras;
-DROP SEQUENCE IF EXISTS public.catalogo_etapas_id_seq;
-DROP TABLE IF EXISTS public.catalogo_etapas;
-DROP SEQUENCE IF EXISTS public.catalogo_ciclos_id_seq;
-DROP TABLE IF EXISTS public.catalogo_ciclos;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -462,6 +366,56 @@ ALTER SEQUENCE public.datos_generales_laboratorio_id_seq OWNED BY public.datos_g
 
 
 --
+-- Name: notas_informe; Type: TABLE; Schema: public; Owner: funglusapp
+--
+
+CREATE TABLE public.notas_informe (
+    id integer NOT NULL,
+    ciclo_id integer NOT NULL,
+    etapa_id integer NOT NULL,
+    muestra_id integer NOT NULL,
+    origen_id integer NOT NULL,
+    secuencia_id integer,
+    nota character varying NOT NULL,
+    usuario_email character varying NOT NULL,
+    usuario_nombre character varying,
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    updated_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.notas_informe OWNER TO funglusapp;
+
+--
+-- Name: TABLE notas_informe; Type: COMMENT; Schema: public; Owner: funglusapp
+--
+
+COMMENT ON TABLE public.notas_informe IS 'Notas y comentarios de usuarios sobre registros específicos del informe';
+
+
+--
+-- Name: notas_informe_id_seq; Type: SEQUENCE; Schema: public; Owner: funglusapp
+--
+
+CREATE SEQUENCE public.notas_informe_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.notas_informe_id_seq OWNER TO funglusapp;
+
+--
+-- Name: notas_informe_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: funglusapp
+--
+
+ALTER SEQUENCE public.notas_informe_id_seq OWNED BY public.notas_informe.id;
+
+
+--
 -- Name: registros_analisis_cenizas; Type: TABLE; Schema: public; Owner: funglusapp
 --
 
@@ -735,6 +689,13 @@ ALTER TABLE ONLY public.datos_generales_laboratorio ALTER COLUMN id SET DEFAULT 
 
 
 --
+-- Name: notas_informe id; Type: DEFAULT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe ALTER COLUMN id SET DEFAULT nextval('public.notas_informe_id_seq'::regclass);
+
+
+--
 -- Name: registros_analisis_cenizas id; Type: DEFAULT; Schema: public; Owner: funglusapp
 --
 
@@ -816,6 +777,7 @@ COPY public.catalogo_ciclos (id, nombre_ciclo, descripcion, fecha_inicio, create
 199	1327	\N	2025-08-18	2025-08-18 00:00:00	2025-08-18 00:00:00
 200	1328	\N	2025-08-25	2025-08-25 00:00:00	2025-08-25 00:00:00
 201	1329	\N	2025-09-01	2025-09-01 00:00:00	2025-09-01 00:00:00
+204	TEST		\N	2026-01-11 00:03:14.592978	2026-01-11 00:04:53.855629
 \.
 
 
@@ -900,8 +862,8 @@ COPY public.catalogo_secuencias (id, nombre, descripcion) FROM stdin;
 COPY public.ciclos_procesamiento (id, identificador_lote, fecha_hora_lote, tipo_analisis, descripcion, created_at, updated_at) FROM stdin;
 1	1	2025-08-03 00:00:00	nitrogeno	\N	2025-08-03 19:10:00	2025-08-03 19:10:00
 2	1	2025-08-03 00:00:00	cenizas	\N	2025-08-03 19:10:00	2025-08-03 19:10:00
-3	TEST	2025-12-27 01:04:00	nitrogeno	TEST	2025-12-26 19:54:01.074082	2025-12-26 19:57:13.926326
-5	TEST	2025-12-27 00:56:00	cenizas	TEST	2025-12-26 19:56:10.926024	2025-12-26 19:57:19.52612
+9	TEST	2026-01-11 00:04:00	nitrogeno	\N	2026-01-11 00:04:36.916279	2026-01-11 00:04:36.916279
+10	TEST	2026-01-11 00:04:00	cenizas	\N	2026-01-11 00:04:46.452669	2026-01-11 00:04:46.452669
 \.
 
 
@@ -2129,6 +2091,8 @@ COPY public.datos_generales_laboratorio (id, ciclo_id, etapa_id, muestra_id, ori
 328	198	1	13	3	9	2025-09-04	2025-09-04	7.125	7.114	0.639	0.6314	0.635	7.658	7.64	1.1	0.75	2.09	1.313	0.24122	\N	\N	2025-09-04 00:00:00	2025-12-26 19:42:39.437859
 1193	184	2	4	3	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.21966999999999998	0.022	0.059	2025-12-26 19:42:38.355784	2025-12-26 19:49:29.196563
 1381	201	2	1	3	2			\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2025-12-26 21:06:58.85368	2025-12-26 21:07:02.298975
+1382	204	2	8	15	1	2026-01-10	2026-01-12	4	23	23	45	34	6	5	235	223	234	230.667	\N	2.813	4.262	2026-01-11 00:05:11.701415	2026-01-11 00:07:11.523575
+1383	204	2	8	15	2	2026-01-10	2026-01-13	23	3	32	34	33	41	32	3	3	3	3	\N	32.2	48.06	2026-01-11 00:33:17.793101	2026-01-11 00:33:57.877016
 1037	172	1	1	9	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.02075	\N	\N	2025-12-26 19:42:37.560756	2025-12-26 19:42:37.562995
 1040	172	1	4	3	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.25643	\N	\N	2025-12-26 19:42:37.571653	2025-12-26 19:42:37.573746
 1042	172	2	11	2	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.16917000000000001	\N	\N	2025-12-26 19:42:37.582711	2025-12-26 19:42:37.584976
@@ -2185,7 +2149,6 @@ COPY public.datos_generales_laboratorio (id, ciclo_id, etapa_id, muestra_id, ori
 1247	185	2	13	3	7	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.23274999999999996	\N	\N	2025-12-26 19:42:38.552309	2025-12-26 19:42:38.554677
 1251	186	2	13	3	7	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.24959	\N	\N	2025-12-26 19:42:38.574135	2025-12-26 19:42:38.576268
 1257	187	2	13	3	10	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.28137	\N	\N	2025-12-26 19:42:38.606155	2025-12-26 19:42:38.608266
-1262	188	1	1	7	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.008239999999999999	\N	\N	2025-12-26 19:42:38.638364	2025-12-26 19:42:38.64044
 1266	188	1	4	3	2	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.21746000000000001	\N	\N	2025-12-26 19:42:38.65995	2025-12-26 19:42:38.662062
 1270	188	2	13	3	6	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.24188	\N	\N	2025-12-26 19:42:38.681962	2025-12-26 19:42:38.68415
 1282	189	2	13	3	6	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.25291	\N	\N	2025-12-26 19:42:38.757563	2025-12-26 19:42:38.759858
@@ -2202,6 +2165,7 @@ COPY public.datos_generales_laboratorio (id, ciclo_id, etapa_id, muestra_id, ori
 1172	183	2	4	3	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.23883	0.02	0.057	2025-12-26 19:42:38.270354	2025-12-26 19:49:29.164071
 1191	184	2	4	7	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.14952	0.014	0.041	2025-12-26 19:42:38.348374	2025-12-26 19:49:29.205577
 1212	185	2	4	3	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.24561000000000002	0.021	0.055	2025-12-26 19:42:38.423135	2025-12-26 19:49:29.226273
+1262	188	1	1	7	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.008239999999999999	3.319	\N	2025-12-26 19:42:38.638364	2026-01-11 00:33:57.862624
 502	172	1	7	5	1	2025-02-15	2025-02-17	6.513	6.91	0.7056	0.7040000000000001	0.705	8.036	8.05	\N	\N	\N	\N	0.1294	\N	\N	2025-02-15 00:00:00	2025-12-26 19:42:37.578637
 1049	173	2	7	5	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.19058	\N	\N	2025-12-26 19:42:37.634938	2025-12-26 19:42:37.637111
 100	173	2	2	3	1	2025-02-17	2025-02-18	1.425	1.456	0.23149999999999998	0.24170000000000003	0.237	\N	\N	1.44	4.14	2.97	2.85	0.12857	\N	\N	2025-02-17 00:00:00	2025-12-26 19:42:37.646123
@@ -2287,6 +2251,18 @@ COPY public.datos_generales_laboratorio (id, ciclo_id, etapa_id, muestra_id, ori
 209	199	2	4	7	1	2025-08-19	2025-08-19	7.403	7.156	0.6	0.5738	0.587	7.535	7.86	\N	\N	\N	\N	0.08681	\N	\N	2025-08-19 00:00:00	2025-12-26 19:42:39.406716
 649	178	1	8	2	1	2025-04-02	2025-04-02	7.664	7.496	0.7967	0.7498	0.773	7.774	7.81	0.28	0.46	2.91	1.217	0.13714	0.004	0.017	2025-04-02 00:00:00	2025-12-26 19:49:28.951017
 1144	181	1	11	2	1	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	0.28723	0.004	0.015	2025-12-26 19:42:38.136465	2025-12-26 19:49:29.17907
+\.
+
+
+--
+-- Data for Name: notas_informe; Type: TABLE DATA; Schema: public; Owner: funglusapp
+--
+
+COPY public.notas_informe (id, ciclo_id, etapa_id, muestra_id, origen_id, secuencia_id, nota, usuario_email, usuario_nombre, created_at, updated_at) FROM stdin;
+1	191	2	1	7	\N	HOla	admin@funglus.com	Felipe	2026-01-10 21:01:45.163589	2026-01-10 21:01:45.163589
+2	191	2	1	7	\N	HOla	admin@funglus.com	Felipe	2026-01-10 21:01:56.595463	2026-01-10 21:01:56.595463
+5	201	2	1	3	\N	Hola	admin@funglus.com	Felipe	2026-01-10 22:23:25.726943	2026-01-10 22:23:25.726943
+6	185	2	1	7	\N	HOLA	admin@funglus.com	Felipe	2026-01-10 23:47:08.163597	2026-01-10 23:47:08.163597
 \.
 
 
@@ -3426,6 +3402,9 @@ COPY public.registros_analisis_nitrogeno (id, ciclo_procesamiento_id, ciclo_cata
 216	1	197	1	13	2	2	1.384	\N	6.3	0.0062	0.6689	0.4582	0.01886828019	2025-09-01 00:00:00	2025-09-01 00:00:00
 217	1	199	1	8	2	1	1.35	\N	3.5	0.0036	0.7795000000000001	0.2977	0.01613662551	2025-09-01 00:00:00	2025-09-01 00:00:00
 218	1	198	1	11	2	1	1.385	\N	5.1	0.0051	0.7232999999999999	0.3832	0.01826410023	2025-09-01 00:00:00	2025-09-01 00:00:00
+219	9	204	2	8	15	1	324	21	31	2.813	34	213.84	4.262	2026-01-11 00:06:51.462697	2026-01-11 00:06:51.462697
+220	9	188	1	1	7	1	432	32	32	3.319	\N	\N	\N	2026-01-11 00:32:23.06494	2026-01-11 00:32:23.06494
+221	9	204	2	8	15	2	32	32	23	32.2	33	21.44	48.06	2026-01-11 00:33:46.492215	2026-01-11 00:33:46.492215
 \.
 
 
@@ -3434,8 +3413,9 @@ COPY public.registros_analisis_nitrogeno (id, ciclo_procesamiento_id, ciclo_cata
 --
 
 COPY public.users (id, email, hashed_password, full_name, role, is_active, created_at, allowed_modules) FROM stdin;
-5	admin@funglus.com	$2b$12$lDSZwEM6ShQZX8/KipYX5ur6c/b3DLe1cAvVmkLw4d5GpWSvFjlx2	Administrador del Sistema	admin	t	2025-12-26 22:20:26.511054	["laboratorio", "siembra", "incubacion", "admin"]
-6	felip_1017@outlook.com	$2b$12$Gu.k2CnZzDEL6fp7Bx9RVeFxpy/m09NqH9zNKTGIKPHmHHTOn6dx2	Felipe Test	viewer	t	2025-12-26 22:48:43.986433	["laboratorio"]
+7	admin@funglus.com	$2b$12$6B8e8SqzT4armkZXic7ULekS9GNj9nku2WJXftpChnqFD3CPatm8u	Felipe	admin	t	2026-01-10 17:42:52.598401	["laboratorio", "informes", "siembra", "incubacion"]
+8	1017felip@gmail.com	$2b$12$CR48q7RuzE5WBy3fRpa23OmEVQLmwCkSII2zPe.rqwiU/lijlC0wi	Felipe Ruiz	admin	f	2026-01-10 17:46:05.799399	[]
+9	felipe.ruiz1@udea.edu.co	$2b$12$0ytyYsBev0VeOkTjZP/nau8XePdxkAGkvx03iuRgGFg/zl19cHdHC	GERENTE	viewer	t	2026-01-11 01:19:19.082183	["informes"]
 \.
 
 
@@ -3443,7 +3423,7 @@ COPY public.users (id, email, hashed_password, full_name, role, is_active, creat
 -- Name: catalogo_ciclos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
 --
 
-SELECT pg_catalog.setval('public.catalogo_ciclos_id_seq', 203, true);
+SELECT pg_catalog.setval('public.catalogo_ciclos_id_seq', 204, true);
 
 
 --
@@ -3478,14 +3458,21 @@ SELECT pg_catalog.setval('public.catalogo_secuencias_id_seq', 11, true);
 -- Name: ciclos_procesamiento_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
 --
 
-SELECT pg_catalog.setval('public.ciclos_procesamiento_id_seq', 5, true);
+SELECT pg_catalog.setval('public.ciclos_procesamiento_id_seq', 10, true);
 
 
 --
 -- Name: datos_generales_laboratorio_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
 --
 
-SELECT pg_catalog.setval('public.datos_generales_laboratorio_id_seq', 1381, true);
+SELECT pg_catalog.setval('public.datos_generales_laboratorio_id_seq', 1383, true);
+
+
+--
+-- Name: notas_informe_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
+--
+
+SELECT pg_catalog.setval('public.notas_informe_id_seq', 6, true);
 
 
 --
@@ -3499,14 +3486,14 @@ SELECT pg_catalog.setval('public.registros_analisis_cenizas_id_seq', 905, true);
 -- Name: registros_analisis_nitrogeno_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
 --
 
-SELECT pg_catalog.setval('public.registros_analisis_nitrogeno_id_seq', 218, true);
+SELECT pg_catalog.setval('public.registros_analisis_nitrogeno_id_seq', 221, true);
 
 
 --
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: funglusapp
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 6, true);
+SELECT pg_catalog.setval('public.users_id_seq', 9, true);
 
 
 --
@@ -3587,6 +3574,14 @@ ALTER TABLE ONLY public.ciclos_procesamiento
 
 ALTER TABLE ONLY public.datos_generales_laboratorio
     ADD CONSTRAINT datos_generales_laboratorio_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: notas_informe notas_informe_pkey; Type: CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_pkey PRIMARY KEY (id);
 
 
 --
@@ -3754,6 +3749,55 @@ CREATE INDEX ix_datos_generales_laboratorio_secuencia_id ON public.datos_general
 
 
 --
+-- Name: ix_notas_informe_ciclo_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_ciclo_id ON public.notas_informe USING btree (ciclo_id);
+
+
+--
+-- Name: ix_notas_informe_etapa_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_etapa_id ON public.notas_informe USING btree (etapa_id);
+
+
+--
+-- Name: ix_notas_informe_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_id ON public.notas_informe USING btree (id);
+
+
+--
+-- Name: ix_notas_informe_muestra_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_muestra_id ON public.notas_informe USING btree (muestra_id);
+
+
+--
+-- Name: ix_notas_informe_origen_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_origen_id ON public.notas_informe USING btree (origen_id);
+
+
+--
+-- Name: ix_notas_informe_secuencia_id; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_secuencia_id ON public.notas_informe USING btree (secuencia_id);
+
+
+--
+-- Name: ix_notas_informe_usuario_email; Type: INDEX; Schema: public; Owner: funglusapp
+--
+
+CREATE INDEX ix_notas_informe_usuario_email ON public.notas_informe USING btree (usuario_email);
+
+
+--
 -- Name: ix_registros_analisis_cenizas_ciclo_catalogo_id; Type: INDEX; Schema: public; Owner: funglusapp
 --
 
@@ -3906,6 +3950,46 @@ ALTER TABLE ONLY public.datos_generales_laboratorio
 
 
 --
+-- Name: notas_informe notas_informe_ciclo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_ciclo_id_fkey FOREIGN KEY (ciclo_id) REFERENCES public.catalogo_ciclos(id);
+
+
+--
+-- Name: notas_informe notas_informe_etapa_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_etapa_id_fkey FOREIGN KEY (etapa_id) REFERENCES public.catalogo_etapas(id);
+
+
+--
+-- Name: notas_informe notas_informe_muestra_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_muestra_id_fkey FOREIGN KEY (muestra_id) REFERENCES public.catalogo_muestras(id);
+
+
+--
+-- Name: notas_informe notas_informe_origen_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_origen_id_fkey FOREIGN KEY (origen_id) REFERENCES public.catalogo_origenes(id);
+
+
+--
+-- Name: notas_informe notas_informe_secuencia_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
+--
+
+ALTER TABLE ONLY public.notas_informe
+    ADD CONSTRAINT notas_informe_secuencia_id_fkey FOREIGN KEY (secuencia_id) REFERENCES public.catalogo_secuencias(id);
+
+
+--
 -- Name: registros_analisis_cenizas registros_analisis_cenizas_ciclo_catalogo_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: funglusapp
 --
 
@@ -4005,5 +4089,5 @@ ALTER TABLE ONLY public.registros_analisis_nitrogeno
 -- PostgreSQL database dump complete
 --
 
-\unrestrict t1OnJpTdaKYcbf1chTxEPhjMMpZLzDrLFoshzuiYA8ZrOLiSEWqAsxsgdOasK1o
+\unrestrict jWQvkWk182hzSivYYjWB0Fq4eeiOHIBMz6rKUKLRdjIdnM4P7HkcScZ0WCrSxiC
 
