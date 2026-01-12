@@ -39,12 +39,12 @@ services:
       # │ 🔧 CAMBIAR SEGÚN ENTORNO                         │
       # └──────────────────────────────────────────────────┘
       # 🏠 DESARROLLO (Mac M4 Pro)
-      ENVIRONMENT: development
-      DEBUG: "true"
+      #ENVIRONMENT: development
+      #DEBUG: "true"
       
       # ☁️  PRODUCCIÓN (Linux + Cloudflare) - descomentar y comentar lo de arriba
-      #ENVIRONMENT: production
-      #DEBUG: "false"
+      ENVIRONMENT: production
+      DEBUG: "true" 
       
       # CORS - Permite todos los orígenes
       BACKEND_CORS_ORIGINS: "http://localhost,http://localhost:80,http://localhost:5173,http://192.168.1.4,http://192.168.1.4:80,http://192.168.1.4:5173,https://funglus.bunnatek.com,https://funglus-api.bunnatek.com"
@@ -71,13 +71,13 @@ services:
         # │ 🔧 DESCOMENTAR SOLO UNA OPCIÓN                   │
         # └──────────────────────────────────────────────────┘
         # 🏠 LOCALHOST (Mac M4 Pro - desarrollo local)
-        - VITE_API_URL=http://localhost:8000/api/v1
+        # VITE_API_URL=http://localhost:8000/api/v1
         
         # 🌐 RED LOCAL (desde otros dispositivos en tu red)
         #- VITE_API_URL=http://192.168.1.4:8000/api/v1
         
         # ☁️  CLOUDFLARE (producción)
-        #- VITE_API_URL=https://funglus-api.bunnatek.com/api/v1
+        - VITE_API_URL=https://funglus-api.bunnatek.com/api/v1
         
     container_name: funglusapp_frontend
     ports:
@@ -91,11 +91,11 @@ services:
   # ═══════════════════════════════════════════════════════════
   # ☁️ CLOUDFLARE TUNNEL (solo para producción)
   # ═══════════════════════════════════════════════════════════
-  # Descomentar este bloque en producción Linux con Cloudflare
+  # CONFIGURACIÓN: Usa Dashboard de Cloudflare (remotely-managed)
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: funglusapp_cloudflared
-    command: tunnel run
+    command: tunnel --protocol http2 run
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
@@ -104,6 +104,13 @@ services:
       - frontend
       - backend
     restart: unless-stopped
+    # ⬇️ AGREGAR ESTE HEALTH CHECK:
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x cloudflared > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 networks:
   funglusapp_network:

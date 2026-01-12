@@ -17,4 +17,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python wait_for_db.py && python create_first_user.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python wait_for_db.py && python create_first_user.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 75 --timeout-graceful-shutdown 30"]
