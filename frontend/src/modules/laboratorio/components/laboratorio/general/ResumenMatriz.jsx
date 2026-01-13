@@ -5,7 +5,7 @@ import { allPossibleMetadataFields } from '../../../../core/config/metadataFormF
 import { API_BASE_URL } from '../../../../core/config/api'
 
 const DATOS_LABORATORIO_CICLO_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/ciclo`;
-const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos/`;
+const CATALOGO_CICLOS_ENDPOINT = `${API_BASE_URL}/catalogos/ciclos`;
 const DATOS_LABORATORIO_ENTRY_ENDPOINT = `${API_BASE_URL}/datos_laboratorio/entry`;
 
 // MODIFICADO: Se agrega highlightParams a las props

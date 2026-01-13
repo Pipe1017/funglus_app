@@ -12,7 +12,7 @@ const FASTAPI_BASE_URL = API_BASE_URL;
 const CICLOS_PROCESAMIENTO_ENDPOINT = `${FASTAPI_BASE_URL}/ciclos-procesamiento`;
 const REGISTROS_NITROGENO_ENDPOINT = `${FASTAPI_BASE_URL}/registros-nitrogeno`;
 const DATOS_LABORATORIO_GET_BY_KEYS_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/get_by_keys`;
-const CATALOGO_CICLOS_ENDPOINT = `${FASTAPI_BASE_URL}/catalogos/ciclos/`;
+const CATALOGO_CICLOS_ENDPOINT = `${FASTAPI_BASE_URL}/catalogos/ciclos`;
 const DATOS_LABORATORIO_CICLO_ENDPOINT = `${FASTAPI_BASE_URL}/datos_laboratorio/ciclo`;
 const TIPO_ANALISIS_NITROGENO = 'nitrogeno';
 
