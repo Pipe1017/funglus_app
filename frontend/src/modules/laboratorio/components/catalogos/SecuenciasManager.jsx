@@ -175,7 +175,7 @@ function SecuenciasManager() {
   return (
     <SimpleCatalogManager 
       catalogName="Secuencias"
-      apiEndpoint={`${API_BASE_URL}/catalogos/secuencias`}
+      apiEndpoint={`${API_BASE_URL}/catalogos/secuencias/`}
       singularName="Secuencia"
     />
   )

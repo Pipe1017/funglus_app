@@ -1,6 +1,6 @@
 services:
   # ═══════════════════════════════════════════════════════════
-  # 🗄️ DATABASE
+  # 🗄️ BASE DE DATOS - PostgreSQL
   # ═══════════════════════════════════════════════════════════
   db:
     image: postgres:15-alpine
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
 
   # ═══════════════════════════════════════════════════════════
-  # 🐍 BACKEND
+  # 🐍 BACKEND - FastAPI
   # ═══════════════════════════════════════════════════════════
   backend:
     build:
@@ -36,18 +36,19 @@ services:
       SECRET_KEY: ${SECRET_KEY:-dev-secret-key-CHANGE-IN-PRODUCTION}
       
       # ┌──────────────────────────────────────────────────┐
-      # │ 🔧 CAMBIAR SEGÚN ENTORNO                         │
+      # │ 🔧 CONFIGURACIÓN POR ENTORNO                     │
       # └──────────────────────────────────────────────────┘
-      # 🏠 DESARROLLO (Mac M4 Pro)
-      #ENVIRONMENT: development
-      #DEBUG: "true"
+      # 🏠 DESARROLLO LOCAL (Mac M4 Pro)
+      # ENVIRONMENT: development
+      # DEBUG: "true"
       
-      # ☁️  PRODUCCIÓN (Linux + Cloudflare) - descomentar y comentar lo de arriba
+      # ☁️ PRODUCCIÓN (Linux + Cloudflare)
       ENVIRONMENT: production
-      DEBUG: "true" 
+      DEBUG: "false"  # Cambiado a false para producción
       
-      # CORS - Permite todos los orígenes
+      # 🌐 CONFIGURACIÓN CORS
       BACKEND_CORS_ORIGINS: "http://localhost,http://localhost:80,http://localhost:5173,http://192.168.1.4,http://192.168.1.4:80,http://192.168.1.4:5173,https://funglus.bunnatek.com,https://funglus-api.bunnatek.com"
+    
     ports:
       - "8000:8000"
     volumes:
@@ -60,7 +61,7 @@ services:
     restart: unless-stopped
 
   # ═══════════════════════════════════════════════════════════
-  # ⚛️ FRONTEND
+  # ⚛️ FRONTEND - React/Vite
   # ═══════════════════════════════════════════════════════════
   frontend:
     build:
@@ -68,20 +69,21 @@ services:
       dockerfile: Dockerfile
       args:
         # ┌──────────────────────────────────────────────────┐
-        # │ 🔧 DESCOMENTAR SOLO UNA OPCIÓN                   │
+        # │ 🔧 URL DE LA API - SELECCIONAR UNA OPCIÓN        │
         # └──────────────────────────────────────────────────┘
-        # 🏠 LOCALHOST (Mac M4 Pro - desarrollo local)
-        # VITE_API_URL=http://localhost:8000/api/v1
+        # 🏠 DESARROLLO LOCAL
+        # VITE_API_URL: http://localhost:8000/api/v1
         
-        # 🌐 RED LOCAL (desde otros dispositivos en tu red)
-        #- VITE_API_URL=http://192.168.1.4:8000/api/v1
+        # 🌐 RED LOCAL
+        # VITE_API_URL: http://192.168.1.4:8000/api/v1
         
-        # ☁️  CLOUDFLARE (producción)
-        - VITE_API_URL=https://funglus-api.bunnatek.com/api/v1
-        
+        # ☁️ PRODUCCIÓN
+        VITE_API_URL: https://funglus-api.bunnatek.com/api/v1
+    
     container_name: funglusapp_frontend
     ports:
       - "80:80"
+      - "443:443"  # Añadido para HTTPS si es necesario
     depends_on:
       - backend
     networks:
@@ -89,9 +91,9 @@ services:
     restart: unless-stopped
 
   # ═══════════════════════════════════════════════════════════
-  # ☁️ CLOUDFLARE TUNNEL (solo para producción)
+  # ☁️ TÚNEL CLOUDFLARE (solo producción)
   # ═══════════════════════════════════════════════════════════
-  # CONFIGURACIÓN: Usa Dashboard de Cloudflare (remotely-managed)
+  # NOTA: Configuración gestionada remotamente vía Dashboard
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: funglusapp_cloudflared
@@ -103,18 +105,23 @@ services:
     depends_on:
       - frontend
       - backend
-    restart: unless-stopped
-    # ⬇️ AGREGAR ESTE HEALTH CHECK:
     healthcheck:
       test: ["CMD-SHELL", "pgrep -x cloudflared > /dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+    restart: unless-stopped
 
+# ═══════════════════════════════════════════════════════════
+# REDES
+# ═══════════════════════════════════════════════════════════
 networks:
   funglusapp_network:
     driver: bridge
 
+# ═══════════════════════════════════════════════════════════
+# VOLÚMENES
+# ═══════════════════════════════════════════════════════════
 volumes:
   postgres_data:
